@@ -180,8 +180,35 @@ main{padding-top:18px}
 .srow .schev{opacity:.35;flex:none}
 .srow.all{font-style:normal}
 .srow.all .sn{color:var(--text-3);font-weight:600}
-.subedit{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
-.subedit:last-of-type{border-bottom:none}
+.bhead{display:grid;grid-template-columns:34px minmax(0,1fr) 84px 66px 48px;gap:5px;align-items:center;
+  padding-bottom:7px;border-bottom:1px solid var(--border-strong);margin-bottom:4px}
+.bhead span{font-size:10px;font-weight:650;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3)}
+.bhead span:nth-child(4){text-align:right;padding-right:6px}
+.bhead span:nth-child(5){text-align:center;font-size:9px}
+.bcat{display:grid;grid-template-columns:34px minmax(0,1fr) 84px 66px 48px;gap:5px;align-items:center;padding:9px 0 7px}
+.bcat input,.bcat select{padding:8px 7px}
+.bcat .bem{width:34px;text-align:center;padding-left:0;padding-right:0}
+.bcat .bbud{text-align:right}
+.bcat .bsum{text-align:right;font-weight:700;font-size:14px;padding-right:7px}
+.bcat .bsum small{display:block;font-size:9.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em}
+.bcat .bact{display:flex;align-items:center;justify-content:flex-end;gap:2px}
+.bcat .bact .del{width:24px;height:26px;display:grid;place-items:center;border-radius:7px;color:var(--text-3);opacity:.6}
+.bcat .bact .del:hover{opacity:1;color:var(--crit);background:var(--surface-3)}
+.bsubs{margin:0 0 10px 16px;padding-left:14px;border-left:2px solid var(--border)}
+.bsub{display:grid;grid-template-columns:minmax(0,1fr) 66px 26px;gap:5px;align-items:center;padding:4px 0}
+.bsub input{padding:7px 8px;font-size:13.5px}
+.bsub input[type=text]{border-color:var(--border)}
+.bsub .bbud{text-align:right}
+.bsub .del{width:24px;height:26px;display:grid;place-items:center;border-radius:7px;color:var(--text-3);opacity:.55}
+.bsub .del:hover{opacity:1;color:var(--crit);background:var(--surface-3)}
+.baddsub{font-size:12.5px;font-weight:650;color:var(--brand);padding:6px 0 2px}
+.baddsub:hover{text-decoration:underline}
+.bsep{height:1px;background:var(--border);margin:2px 0}
+@media(max-width:700px){
+  .bhead,.bcat{grid-template-columns:30px minmax(0,1fr) 74px 58px 44px;gap:4px}
+  .bcat .bem{width:30px}
+  .bsub{grid-template-columns:minmax(0,1fr) 58px 24px}
+}
 .gcard.gi{--gc:var(--indisp);--gcink:var(--indisp-ink);--gcsoft:var(--indisp-soft)}
 .gcard.gl{--gc:var(--loisir);--gcink:var(--loisir-ink);--gcsoft:var(--loisir-soft)}
 .ghead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
@@ -591,7 +618,22 @@ const STRUCT = [
   {id:'Voyages',     em:'✈️', grp:'l', subs:['Las Vegas','Toscane'],             from:['Voyages','Voyage','Nourriture vacances'], ren:{}},
   {id:'Divers',      em:'✨', grp:'l', subs:[],                                  from:['Divers','Formations'], ren:{}},
 ];
-const STRUCT_CATS = STRUCT.map(s=>({id:s.id, em:s.em, grp:s.grp, budget:0, report:true, subs:[...s.subs]}));
+const STRUCT_CATS = STRUCT.map(s=>({id:s.id, em:s.em, grp:s.grp, budget:0, report:true,
+                                    subs:s.subs.map(n=>({n, b:0}))}));
+
+/* une sous-catégorie est un objet {n:nom, b:budget mensuel} */
+function normSubs(c){
+  if(!Array.isArray(c.subs)) c.subs=[];
+  c.subs = c.subs.map(s => typeof s==='string' ? {n:s, b:0} : {n:s.n, b:+s.b||0});
+  return c.subs;
+}
+function subNames(c){ return normSubs(c).map(s=>s.n); }
+function subSum(c){ return r2(normSubs(c).reduce((s,x)=>s+(+x.b||0),0)); }
+/* le budget de la catégorie devient la somme de ses sous-catégories
+   dès qu'au moins l'une d'elles a un budget */
+function splitMode(c){ return normSubs(c).some(x=>(+x.b||0)>0); }
+function catBudget(c){ return splitMode(c) ? subSum(c) : (+c.budget||0); }
+function syncCatBudget(c){ if(splitMode(c)) c.budget = subSum(c); return c.budget; }
 const PAY = ['Bancontact','Espèces'];
 const GRP_NAME = {i:'Indispensables', l:'Loisirs'};
 const KEY = 'finances_v2';
@@ -932,7 +974,6 @@ let FILTER = null;       // filtre catégorie (onglet Dépenses)
 let FSUB = null;         // filtre sous-catégorie
 let OPEN = {i:true, l:true};   // sections dépliées sur l'accueil
 let HCAT = 'Courses';    // catégorie suivie dans l'historique
-let SCAT = null;         // catégorie dont on édite les sous-catégories
 
 function defaultMonth(){
   const ms=allMonths(), tk=mKey(new Date());
@@ -1355,59 +1396,58 @@ function renderSet(){
     ${S.reportFrom? `<p class="hint">Les reports repartent de zéro à partir de ${mLabel(S.reportFrom,true)}. <button class="btn sm" style="margin-left:4px" data-act="clearfrom">Annuler</button></p>`:''}
     <button class="btn sm" style="margin-top:10px" data-act="resetreport">Repartir de zéro à partir ${deMois(CUR)}</button>
   </div>`;
-  html+=`<div class="card"><h2>Budgets et catégories</h2><p class="sub">Le budget s'applique à tous les mois. Décoche « report » pour qu'une catégorie reparte de son budget chaque mois.</p>`;
-  html+=`<div class="catedit ce ce-hd" style="border-bottom:1px solid var(--border-strong)">
-    <span class="ce-em"></span><span class="ce-nm small">Catégorie</span><span class="ce-gr small">Type</span>
-    <span class="ce-bd small">Budget /mois</span><span class="ce-ac small">Report</span></div>`;
-  S.cats.forEach(c=>{
-    html+=`<div class="catedit ce">
-      <input class="ce-em" type="text" value="${esc(c.em)}" data-cem="${esc(c.id)}" aria-label="Icône">
-      <input class="ce-nm" type="text" value="${esc(c.id)}" data-cnm="${esc(c.id)}" aria-label="Nom de la catégorie">
-      <select class="ce-gr" data-cgr="${esc(c.id)}" aria-label="Type">
-        <option value="i" ${c.grp==='i'?'selected':''}>Indisp.</option>
-        <option value="l" ${c.grp==='l'?'selected':''}>Loisir</option>
-      </select>
-      <input class="ce-bd" type="text" inputmode="decimal" autocomplete="off" value="${c.budget||0}" data-cbd="${esc(c.id)}" aria-label="Budget mensuel">
-      <span class="ce-ac">
-        <input type="checkbox" ${c.report?'checked':''} data-crp="${esc(c.id)}" style="width:20px;height:20px;accent-color:var(--brand)" aria-label="Reporter le reste">
-        <button class="del" style="opacity:.6" data-cdel="${esc(c.id)}" aria-label="Supprimer la catégorie"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
-      </span>
+  const GB={
+    i:{cls:'gi', nom:'Indispensables',
+       ico:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg>'},
+    l:{cls:'gl', nom:'Loisirs',
+       ico:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.35-9.33-8.5A5.2 5.2 0 0 1 12 6.5a5.2 5.2 0 0 1 9.33 6C19 16.65 12 21 12 21z"/></svg>'}
+  };
+  const TRASH='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>';
+  ['i','l'].forEach(g=>{
+    const cs=S.cats.filter(c=>c.grp===g);
+    const gtot=r2(cs.reduce((s,c)=>s+catBudget(c),0));
+    const M=GB[g];
+    html+=`<div class="card gcard ${M.cls}">
+      <div class="ghead" style="cursor:default;margin-bottom:10px">
+        <span class="gicon">${M.ico}</span>
+        <div class="gt"><h2>${M.nom}</h2><p class="gs">${cs.length} catégorie${cs.length>1?'s':''}</p></div>
+        <div class="gv tnum">${fmt(gtot)}<span>par mois</span></div>
+      </div>
+      <div class="bhead"><span></span><span>Catégorie</span><span>Type</span><span>Budget</span><span>Report</span></div>`;
+    cs.forEach((c,idx)=>{
+      const subs=normSubs(c), split=splitMode(c);
+      if(idx) html+='<div class="bsep"></div>';
+      html+=`<div class="bcat">
+        <input class="bem" type="text" value="${esc(c.em)}" data-cem="${esc(c.id)}" aria-label="Icône">
+        <input type="text" value="${esc(c.id)}" data-cnm="${esc(c.id)}" aria-label="Nom de la catégorie">
+        <select data-cgr="${esc(c.id)}" aria-label="Type">
+          <option value="i" ${c.grp==='i'?'selected':''}>Indisp.</option>
+          <option value="l" ${c.grp==='l'?'selected':''}>Loisir</option>
+        </select>
+        ${split
+          ? `<div class="bsum tnum">${nfNum.format(subSum(c))} €<small>total</small></div>`
+          : `<input class="bbud" type="text" inputmode="decimal" autocomplete="off" value="${c.budget||0}" data-cbd="${esc(c.id)}" aria-label="Budget mensuel">`}
+        <span class="bact">
+          <input type="checkbox" ${c.report?'checked':''} data-crp="${esc(c.id)}" style="width:18px;height:18px;accent-color:var(--brand)" aria-label="Reporter le reste">
+          <button class="del" data-cdel="${esc(c.id)}" aria-label="Supprimer la catégorie">${TRASH}</button>
+        </span>
+      </div>`;
+      html+='<div class="bsubs">';
+      const ci=S.cats.indexOf(c);
+      subs.forEach((s,si)=>{
+        html+=`<div class="bsub">
+          <input type="text" value="${esc(s.n)}" data-snm="${ci}:${si}" aria-label="Nom de la sous-catégorie">
+          <input class="bbud" type="text" inputmode="decimal" autocomplete="off" value="${s.b||''}" placeholder="0" data-sbd="${ci}:${si}" aria-label="Budget de la sous-catégorie">
+          <button class="del" data-subdel="${ci}:${si}" aria-label="Supprimer la sous-catégorie">${TRASH}</button>
+        </div>`;
+      });
+      html+=`<button class="baddsub" data-subadd="${esc(c.id)}">+ Sous-catégorie</button></div>`;
+    });
+    if(!cs.length) html+='<p class="small">Aucune catégorie ici.</p>';
+    html+=`<button class="btn sm" style="margin-top:6px" data-addcat="${g}">+ Nouvelle catégorie dans ${M.nom}</button>
     </div>`;
   });
-  html+=`<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-    <button class="btn sm" data-act="addcat">+ Nouvelle catégorie</button>
-  </div>`;
-  const totB=S.cats.reduce((s,c)=>s+(c.budget||0),0);
-  html+=`<div class="kv" style="margin-top:14px"><span>Budget total mensuel</span><b class="tnum">${fmt(totB)}</b></div></div>`;
-
-  html+=`<div class="card"><h2>Sous-catégories</h2><p class="sub">Choisis une catégorie pour gérer son détail. Une sous-catégorie n'apparaît sur l'accueil que si tu as dépensé dessus dans le mois.</p>
-    <div class="chips" style="margin-bottom:14px">`;
-  S.cats.forEach(c=>{
-    const n=(c.subs||[]).length;
-    html+=`<button class="chip" data-scat="${esc(c.id)}" aria-pressed="${SCAT===c.id}">${c.em} ${esc(c.id)}${n?` · ${n}`:''}</button>`;
-  });
-  html+='</div>';
-  const sc = S.cats.find(c=>c.id===SCAT) || S.cats[0];
-  if(sc){
-    (sc.subs||[]).forEach(s=>{
-      const n=S.tx.filter(x=>x.c===sc.id && (x.s||'')===s).length;
-      html+=`<div class="subedit">
-        <div><div style="font-size:14.5px;font-weight:600">${esc(s)}</div><div class="small">${n} opération${n>1?'s':''}</div></div>
-        <button class="del" style="opacity:.6" data-subdel="${esc(sc.id)}\u0000${esc(s)}" aria-label="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
-      </div>`;
-    });
-    if(!(sc.subs||[]).length) html+=`<p class="small" style="margin:0 0 12px">Aucune sous-catégorie dans « ${esc(sc.id)} ».</p>`;
-    html+=`<button class="btn sm" style="margin-top:12px" data-subadd="${esc(sc.id)}">+ Sous-catégorie dans « ${esc(sc.id)} »</button>`;
-  }
-  html+='</div>';
-
-  html+=`<div class="card"><h2>Budgets exceptionnels — ${mLabel(CUR,true)}</h2><p class="sub">Modifie le budget pour ce mois uniquement (vide = budget habituel).</p>`;
-  S.cats.forEach(c=>{
-    const ov=(S.months[CUR]&&S.months[CUR].b&&S.months[CUR].b[c.id]!=null)?S.months[CUR].b[c.id]:'';
-    html+=`<div class="catedit" style="grid-template-columns:auto 1fr 110px"><span class="em">${c.em}</span><span style="font-size:14px;font-weight:600">${esc(c.id)}</span>
-      <input type="text" inputmode="decimal" autocomplete="off" style="text-align:right" placeholder="${c.budget||0}" value="${ov}" data-mbd="${esc(c.id)}" aria-label="Budget du mois"></div>`;
-  });
-  html+='</div>';
+  html+=`<p class="hint" style="text-align:center;margin:-4px 0 16px">Dès qu'une sous-catégorie reçoit un budget, le budget de sa catégorie devient la somme de ses sous-catégories.</p>`;
 
   html+=`<div class="card"><h2>Solde de départ</h2><p class="sub">Solde du compte avant le tout premier mois (${mLabel(allMonths()[0],true)}). Tout le reste se calcule à partir de là.</p>
     <div style="max-width:220px"><input type="text" inputmode="decimal" autocomplete="off" value="${S.solde0}" id="solde0"></div>
@@ -1453,7 +1493,7 @@ let SUBSEL='', PMSEL='';
 function renderSubChips(){
   const sel=el('txCats').querySelector('[aria-pressed="true"]');
   const c=sel? cat(sel.dataset.c) : null;
-  const subs=(c&&c.subs)||[];
+  const subs=c?subNames(c):[];
   el('wrapSubs').hidden = !(KIND==='dep' && subs.length);
   el('txSubs').innerHTML = subs.map(s=>`<button type="button" class="chip" data-s="${esc(s)}" aria-pressed="${SUBSEL===s}">${esc(s)}</button>`).join('');
   el('txPay').querySelectorAll('[data-pm]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.pm===PMSEL)));
@@ -1563,6 +1603,13 @@ function openTx(kind, editId){
   setTimeout(()=>el('txAmount').focus(),50);
 }
 function ensureMonth(k){ if(!S.months[k]) S.months[k]={rev:[],adj:0,b:{}}; return S.months[k]; }
+
+function subRef(v){
+  const [ci,si]=String(v).split(':').map(Number);
+  const c=S.cats[ci]; if(!c) return null;
+  const subs=normSubs(c); const s=subs[si];
+  return s ? {c, s, si} : null;
+}
 
 /* ---------- sélection multiple par appui long ---------- */
 let SEL=new Set(), SELOPEN=false, BPOS=null, SUPPRESS=0;
@@ -1734,7 +1781,8 @@ function applyStructure(){
     }
     target.grp=st.grp;
     if(!target.em||target.em==='•') target.em=st.em;
-    target.subs=[...new Set([...(target.subs||[]), ...st.subs])];
+    normSubs(target);
+    st.subs.forEach(n=>{ if(!target.subs.some(x=>x.n===n)) target.subs.push({n, b:0}); });
     st.from.forEach(f=>{
       if(f===st.id) return;
       const src=S.cats.find(c=>c.id===f);
@@ -1778,8 +1826,7 @@ function undo(){
   if(!u){ toast('Rien à annuler'); return; }
   S=JSON.parse(u.s);
   if(!Array.isArray(S.debts)) S.debts=[];
-  S.cats.forEach(c=>{ if(!Array.isArray(c.subs)) c.subs=[]; });
-  if(SCAT===null && S.cats.length) SCAT=S.cats[0].id;
+  S.cats.forEach(c=>{ normSubs(c); syncCatBudget(c); });
   /* les remboursements rattachés à une dépense se déduisent désormais de la dépense */
   S.debts.forEach(d=>{
     if(d.paid && d.tx && d.rev && d.rk && S.months[d.rk]){
@@ -1920,7 +1967,7 @@ function renderPicker(){
 
 document.addEventListener('click', e=>{
   if(Date.now()-SUPPRESS < 500) return;   /* clic issu d'un appui long */
-  const t=e.target.closest('[data-tab],[data-act],[data-filter],[data-deltx],[data-delrev],[data-goto],[data-hcat],[data-cdel],[data-c],[data-rmode],[data-jump],[data-catf],[data-kind],[data-rl],[data-res],[data-share],[data-pay],[data-unpay],[data-deldebt],[data-drm],[data-edittx],[data-editrev],[data-undo],[data-gtog],[data-ctog],[data-s],[data-pm],[data-selact],[data-subdel],[data-subadd],[data-scat],[data-subf]');
+  const t=e.target.closest('[data-tab],[data-act],[data-filter],[data-deltx],[data-delrev],[data-goto],[data-hcat],[data-cdel],[data-c],[data-rmode],[data-jump],[data-catf],[data-kind],[data-rl],[data-res],[data-share],[data-pay],[data-unpay],[data-deldebt],[data-drm],[data-edittx],[data-editrev],[data-undo],[data-gtog],[data-ctog],[data-s],[data-pm],[data-selact],[data-subdel],[data-subadd],[data-subf],[data-snm],[data-sbd],[data-addcat]');
   if(!t) return;
   if(t.dataset.gtog){ OPEN[t.dataset.gtog]=!OPEN[t.dataset.gtog]; renderDash(); return; }
   if(t.dataset.ctog){ const k='c:'+t.dataset.ctog; OPEN[k]=!OPEN[k]; renderDash(); return; }
@@ -1935,24 +1982,33 @@ document.addEventListener('click', e=>{
     return;
   }
   if(t.dataset.subdel!==undefined){
-    const [ci,si]=t.dataset.subdel.split('\u0000');
-    const c=cat(ci); if(!c.subs) return;
-    const n=S.tx.filter(x=>x.c===ci && (x.s||'')===si).length;
-    if(n && !confirm(`« ${si} » contient ${n} dépense(s). Elles resteront dans « ${ci} » sans sous-catégorie. Continuer ?`)) return;
+    const R=subRef(t.dataset.subdel); if(!R) return;
+    const nom=R.s.n, cid=R.c.id;
+    const n=S.tx.filter(x=>x.c===cid && (x.s||'')===nom).length;
+    if(n && !confirm(`« ${nom} » contient ${n} dépense(s). Elles resteront dans « ${cid} » sans sous-catégorie. Continuer ?`)) return;
     snap('suppression de sous-catégorie');
-    S.tx.forEach(x=>{ if(x.c===ci && (x.s||'')===si) x.s=''; });
-    c.subs=c.subs.filter(s=>s!==si);
+    S.tx.forEach(x=>{ if(x.c===cid && (x.s||'')===nom) x.s=''; });
+    R.c.subs.splice(R.si,1);
+    syncCatBudget(R.c);
     save(); bust(); render(); toast('Sous-catégorie supprimée', true); return;
   }
   if(t.dataset.subadd!==undefined){
-    const c=cat(t.dataset.subadd);
-    const nom=prompt(`Nouvelle sous-catégorie pour « ${c.id} » :`);
+    const c=cat(t.dataset.subadd); normSubs(c);
+    const nom=prompt(`Nouvelle sous-catégorie dans « ${c.id} » :`);
     if(!nom||!nom.trim()) return;
     const v=nom.trim();
-    if(!c.subs) c.subs=[];
-    if(c.subs.includes(v)){ toast('Elle existe déjà'); return; }
+    if(c.subs.some(s=>s.n===v)){ toast('Elle existe déjà'); return; }
     snap('ajout de sous-catégorie');
-    c.subs.push(v); save(); bust(); render(); return;
+    c.subs.push({n:v, b:0}); save(); bust(); render(); return;
+  }
+  if(t.dataset.addcat!==undefined){
+    const nom=prompt('Nom de la nouvelle catégorie :');
+    if(!nom||!nom.trim()) return;
+    const v=nom.trim();
+    if(S.cats.some(c=>c.id===v)){ toast('Cette catégorie existe déjà'); return; }
+    snap('ajout de catégorie');
+    S.cats.push({id:v, em:'•', grp:t.dataset.addcat, budget:0, report:true, subs:[]});
+    save(); bust(); render(); return;
   }
   if(t.dataset.undo!==undefined){ undo(); return; }
   if(t.dataset.drm!==undefined){ DROWS.splice(+t.dataset.drm,1); if(SHARE!=='custom') applyShare(); else renderDebtRows(); return; }
@@ -2013,7 +2069,6 @@ document.addEventListener('click', e=>{
     renderTx(); return;
   }
   if(t.dataset.hcat){ HCAT=t.dataset.hcat; renderHist(); return; }
-  if(t.dataset.scat){ SCAT=t.dataset.scat; renderSet(); return; }
   if(t.dataset.goto){ CUR=t.dataset.goto; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
   if(t.dataset.deltx){
     snap('suppression de dépense');
@@ -2045,11 +2100,6 @@ document.addEventListener('click', e=>{
   else if(a==='clearadj'){
     if(S.months[CUR]) S.months[CUR].adj=0;
     save(); bust(); el('dlgSolde').close(); render(); toast('Ajustement retiré');
-  }
-  else if(a==='addcat'){
-    const nom=prompt('Nom de la nouvelle catégorie :'); if(!nom) return;
-    if(S.cats.some(c=>c.id===nom.trim())){ toast('Cette catégorie existe déjà'); return; }
-    S.cats.push({id:nom.trim(), em:'•', grp:'l', budget:0, report:true}); save(); render();
   }
   else if(a==='resetreport'){
     S.reportFrom = CUR; save(); bust(); render(); toast('Reports remis à zéro');
@@ -2087,7 +2137,22 @@ document.addEventListener('change', e=>{
     const v=numFR(t.value);
     if(isNaN(v)){ toast('Montant invalide'); return; }
     S.solde0=v; save(); bust(); renderHero(); renderSet(); toast('Solde de départ mis à jour'); return; }
-  if(t.dataset.cbd!==undefined){ const c=cat(t.dataset.cbd); const v=numFR(t.value); c.budget=isNaN(v)?0:v; save(); bust(); return; }
+  if(t.dataset.cbd!==undefined){ const c=cat(t.dataset.cbd); const v=numFR(t.value); c.budget=isNaN(v)?0:v; save(); bust(); renderSet(); return; }
+  if(t.dataset.sbd!==undefined){
+    const R=subRef(t.dataset.sbd); if(!R) return;
+    const v=numFR(t.value); R.s.b=isNaN(v)?0:v;
+    syncCatBudget(R.c); save(); bust(); renderSet(); return;
+  }
+  if(t.dataset.snm!==undefined){
+    const R=subRef(t.dataset.snm); if(!R) return;
+    const anc=R.s.n, nv=t.value.trim();
+    if(!nv || nv===anc){ t.value=anc; return; }
+    if(R.c.subs.some((x,k)=>k!==R.si && x.n===nv)){ toast('Ce nom existe déjà'); t.value=anc; return; }
+    snap('renommage de sous-catégorie');
+    R.s.n=nv;
+    S.tx.forEach(x=>{ if(x.c===R.c.id && (x.s||'')===anc) x.s=nv; });
+    save(); bust(); render(); return;
+  }
   if(t.dataset.crp!==undefined){ const c=cat(t.dataset.crp); c.report=t.checked; save(); bust(); return; }
   if(t.dataset.cgr!==undefined){ const c=cat(t.dataset.cgr); c.grp=t.value; save(); bust(); return; }
   if(t.dataset.cem!==undefined){ const c=cat(t.dataset.cem); c.em=t.value.trim()||'•'; save(); return; }
@@ -2247,8 +2312,7 @@ document.addEventListener('touchmove', e=>{ if(e.touches.length>1) e.preventDefa
   S=load();
   S.cats.forEach(c=>{ if(c.report===undefined) c.report=true; });
   if(!Array.isArray(S.debts)) S.debts=[];
-  S.cats.forEach(c=>{ if(!Array.isArray(c.subs)) c.subs=[]; });
-  if(SCAT===null && S.cats.length) SCAT=S.cats[0].id;
+  S.cats.forEach(c=>{ normSubs(c); syncCatBudget(c); });
   /* les remboursements rattachés à une dépense se déduisent désormais de la dépense */
   S.debts.forEach(d=>{
     if(d.paid && d.tx && d.rev && d.rk && S.months[d.rk]){
