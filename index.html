@@ -293,16 +293,20 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
 .toast{position:fixed;left:50%;transform:translate(-50%,20px);bottom:calc(26px + env(safe-area-inset-bottom, 0px));background:var(--text);color:var(--surface);padding:11px 18px;border-radius:99px;font-size:13.5px;font-weight:600;z-index:99;opacity:0;transition:.25s;pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .catedit{display:grid;grid-template-columns:auto 1fr 96px auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
-.ce{grid-template-columns:46px minmax(0,1fr) 152px 92px auto;grid-template-areas:"em nm gr bd ac";column-gap:8px}
+.ce{grid-template-columns:46px minmax(0,1fr) 152px 92px auto;align-items:center;grid-template-areas:"em nm gr bd ac";column-gap:8px}
 .ce-em{grid-area:em;width:46px;text-align:center;padding-left:2px;padding-right:2px}
 .ce-nm{grid-area:nm;min-width:0;width:100%}
 .ce-gr{grid-area:gr;min-width:0;width:100%}
 .ce-bd{grid-area:bd;min-width:0;width:100%;text-align:right}
 .ce-ac{grid-area:ac;display:flex;gap:4px;align-items:center;justify-content:flex-end}
-@media(max-width:640px){
-  .ce{grid-template-columns:46px minmax(0,1fr) 86px auto;
-      grid-template-areas:"em nm nm nm" "gr gr bd ac";row-gap:8px;padding:12px 0}
-  .ce-hd{display:none}
+@media(max-width:700px){
+  .ce{grid-template-columns:36px minmax(0,1fr) 88px 52px auto;column-gap:4px}
+  .ce-em{width:36px;padding-left:0;padding-right:0}
+  .ce-nm,.ce-gr,.ce-bd{padding-left:6px;padding-right:4px}
+  .ce-ac{gap:0}
+  .ce-ac .del{width:26px}
+  .ce-hd{font-size:9.5px}
+  .card:has(.ce){padding-left:12px;padding-right:12px}
 }
 .catedit:last-of-type{border-bottom:none}
 .catedit input[type=text]{padding:7px 10px;font-size:14px}
@@ -373,7 +377,7 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
     </div>
     <div>
       <label class="f" for="txAmount">Montant</label>
-      <div class="amount-input"><input id="txAmount" type="number" step="0.01" inputmode="decimal" placeholder="0,00" required><span class="cur">€</span></div>
+      <div class="amount-input"><input id="txAmount" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" required><span class="cur">€</span></div>
     </div>
     <div id="wrapCats">
       <label class="f">Catégorie</label>
@@ -397,7 +401,7 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
           <button type="button" class="chip" data-share="all">Tout</button>
           <button type="button" class="chip" data-share="custom">Montant précis</button>
         </div>
-        <input id="debtAmt" type="number" step="0.01" inputmode="decimal" placeholder="Montant dû" aria-label="Montant dû">
+        <input id="debtAmt" type="text" inputmode="decimal" autocomplete="off" placeholder="Montant dû" aria-label="Montant dû">
       </div>
     </div>
     <div class="row2" id="rowDate">
@@ -417,7 +421,7 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
   <div class="stack">
     <div>
       <label class="f" for="soldeVal">Solde réel sur le compte</label>
-      <div class="amount-input"><input id="soldeVal" type="number" step="0.01" inputmode="decimal" required><span class="cur">€</span></div>
+      <div class="amount-input"><input id="soldeVal" type="text" inputmode="decimal" autocomplete="off" required><span class="cur">€</span></div>
     </div>
   </div>
   <p class="hint" id="soldeAdj"></p>
@@ -431,7 +435,7 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
   <h3>Quelqu'un me doit</h3>
   <div class="stack">
     <div><label class="f" for="ndWho">Qui</label><input id="ndWho" type="text" placeholder="Prénom" list="whoList2" required><datalist id="whoList2"></datalist></div>
-    <div><label class="f" for="ndAmt">Montant</label><div class="amount-input"><input id="ndAmt" type="number" step="0.01" inputmode="decimal" placeholder="0,00" required><span class="cur">€</span></div></div>
+    <div><label class="f" for="ndAmt">Montant</label><div class="amount-input"><input id="ndAmt" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" required><span class="cur">€</span></div></div>
     <div class="row2">
       <div><label class="f" for="ndDate">Date</label><input id="ndDate" type="date" required></div>
       <div><label class="f" for="ndNote">Pourquoi</label><input id="ndNote" type="text" placeholder="ex. resto"></div>
@@ -524,6 +528,13 @@ const fmt = n => nfEur.format(n||0);
 const fmt0 = n => nfEur0.format(n||0);
 const sgn = n => (n>0?'+':'') + nfEur.format(n||0);
 const r2 = n => Math.round((n+Number.EPSILON)*100)/100;
+/* accepte « 12,50 », « 12.50 », « 1 200,50 », « 12,50 € » */
+function numFR(v){
+  if(v==null) return NaN;
+  const s=String(v).replace(/[\s\u00a0€]/g,'').replace(',','.');
+  if(s==='' || !/^-?\d*\.?\d*$/.test(s)) return NaN;
+  return parseFloat(s);
+}
 
 function mKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 function mLabel(k, long){
@@ -1147,10 +1158,10 @@ function renderSet(){
       <input class="ce-em" type="text" value="${esc(c.em)}" data-cem="${esc(c.id)}" aria-label="Icône">
       <input class="ce-nm" type="text" value="${esc(c.id)}" data-cnm="${esc(c.id)}" aria-label="Nom de la catégorie">
       <select class="ce-gr" data-cgr="${esc(c.id)}" aria-label="Type">
-        <option value="i" ${c.grp==='i'?'selected':''}>Indispensable</option>
+        <option value="i" ${c.grp==='i'?'selected':''}>Indisp.</option>
         <option value="l" ${c.grp==='l'?'selected':''}>Loisir</option>
       </select>
-      <input class="ce-bd" type="number" step="1" inputmode="numeric" value="${c.budget||0}" data-cbd="${esc(c.id)}" aria-label="Budget mensuel">
+      <input class="ce-bd" type="text" inputmode="decimal" autocomplete="off" value="${c.budget||0}" data-cbd="${esc(c.id)}" aria-label="Budget mensuel">
       <span class="ce-ac">
         <input type="checkbox" ${c.report?'checked':''} data-crp="${esc(c.id)}" style="width:20px;height:20px;accent-color:var(--brand)" aria-label="Reporter le reste">
         <button class="del" style="opacity:.6" data-cdel="${esc(c.id)}" aria-label="Supprimer la catégorie"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
@@ -1167,12 +1178,12 @@ function renderSet(){
   S.cats.forEach(c=>{
     const ov=(S.months[CUR]&&S.months[CUR].b&&S.months[CUR].b[c.id]!=null)?S.months[CUR].b[c.id]:'';
     html+=`<div class="catedit" style="grid-template-columns:auto 1fr 110px"><span class="em">${c.em}</span><span style="font-size:14px;font-weight:600">${esc(c.id)}</span>
-      <input type="number" step="1" inputmode="numeric" style="text-align:right" placeholder="${c.budget||0}" value="${ov}" data-mbd="${esc(c.id)}" aria-label="Budget du mois"></div>`;
+      <input type="text" inputmode="decimal" autocomplete="off" style="text-align:right" placeholder="${c.budget||0}" value="${ov}" data-mbd="${esc(c.id)}" aria-label="Budget du mois"></div>`;
   });
   html+='</div>';
 
   html+=`<div class="card"><h2>Solde de départ</h2><p class="sub">Solde du compte avant le tout premier mois (${mLabel(allMonths()[0],true)}). Tout le reste se calcule à partir de là.</p>
-    <div style="max-width:220px"><input type="number" step="0.01" value="${S.solde0}" id="solde0"></div>
+    <div style="max-width:220px"><input type="text" inputmode="decimal" autocomplete="off" value="${S.solde0}" id="solde0"></div>
     <p class="hint">Solde actuel calculé : <b>${fmt(soldes()[allMonths()[allMonths().length-1]].fin)}</b></p></div>`;
 
   html+=`<div class="card"><h2>Sauvegarde</h2><p class="sub">Tes données restent sur cet appareil, dans ce navigateur. Exporte régulièrement pour ne rien perdre.</p>
@@ -1221,7 +1232,7 @@ function setKind(k){
 let SHARE='half';
 function syncDebtAmt(){
   if(!el('debtOn').checked || SHARE==='custom') return;
-  const a=parseFloat(el('txAmount').value);
+  const a=numFR(el('txAmount').value);
   if(!isFinite(a)) { el('debtAmt').value=''; return; }
   el('debtAmt').value = (SHARE==='all'? r2(a) : r2(a/2)).toFixed(2);
 }
@@ -1473,8 +1484,11 @@ document.addEventListener('change', e=>{
       catch(err){ toast('Fichier illisible'); } };
     fr.readAsText(t.files[0]); return;
   }
-  if(t.id==='solde0'){ S.solde0=parseFloat(t.value)||0; save(); bust(); renderHero(); return; }
-  if(t.dataset.cbd!==undefined){ const c=cat(t.dataset.cbd); c.budget=parseFloat(t.value)||0; save(); bust(); return; }
+  if(t.id==='solde0'){
+    const v=numFR(t.value);
+    if(isNaN(v)){ toast('Montant invalide'); return; }
+    S.solde0=v; save(); bust(); renderHero(); renderSet(); toast('Solde de départ mis à jour'); return; }
+  if(t.dataset.cbd!==undefined){ const c=cat(t.dataset.cbd); const v=numFR(t.value); c.budget=isNaN(v)?0:v; save(); bust(); return; }
   if(t.dataset.crp!==undefined){ const c=cat(t.dataset.crp); c.report=t.checked; save(); bust(); return; }
   if(t.dataset.cgr!==undefined){ const c=cat(t.dataset.cgr); c.grp=t.value; save(); bust(); return; }
   if(t.dataset.cem!==undefined){ const c=cat(t.dataset.cem); c.em=t.value.trim()||'•'; save(); return; }
@@ -1490,13 +1504,13 @@ document.addEventListener('change', e=>{
   }
   if(t.dataset.mbd!==undefined){
     const M=ensureMonth(CUR); const v=t.value.trim();
-    if(v==='') delete M.b[t.dataset.mbd]; else M.b[t.dataset.mbd]=parseFloat(v)||0;
+    if(v==='') delete M.b[t.dataset.mbd]; else { const n=numFR(v); M.b[t.dataset.mbd]=isNaN(n)?0:n; }
     save(); bust(); return;
   }
 });
 
 el('frmTx').addEventListener('submit', e=>{
-  const amt=parseFloat(el('txAmount').value);
+  const amt=numFR(el('txAmount').value);
   if(!isFinite(amt)||amt===0){ e.preventDefault(); toast('Indique un montant'); return; }
   const d=el('txDate').value || (CUR+'-15');
   const k=d.slice(0,7);
@@ -1508,7 +1522,7 @@ el('frmTx').addEventListener('submit', e=>{
     let due=0;
     if(el('debtOn').checked){
       const who=el('debtWho').value.trim();
-      const da=parseFloat(el('debtAmt').value);
+      const da=numFR(el('debtAmt').value);
       if(who && isFinite(da) && da>0){
         due=r2(Math.min(da, r2(amt)));
         debts().push({id:uid(), who, a:due, d, n:el('txNote').value.trim(), tx:tid, paid:false, pd:null, rev:null, rk:null});
@@ -1532,7 +1546,7 @@ el('curM').addEventListener('click',openMonthPicker);
 el('heroAmount').addEventListener('click',openSolde);
 el('soldeCancel').addEventListener('click',()=>el('dlgSolde').close());
 el('frmSolde').addEventListener('submit', e=>{
-  const v=parseFloat(el('soldeVal').value);
+  const v=numFR(el('soldeVal').value);
   if(!isFinite(v)){ e.preventDefault(); return; }
   const M=ensureMonth(CUR);
   M.adj = r2((M.adj||0) + (v - soldes()[CUR].fin));
@@ -1543,7 +1557,7 @@ el('debtOn').addEventListener('change',toggleDebt);
 el('txAmount').addEventListener('input',syncDebtAmt);
 el('ndCancel').addEventListener('click',()=>el('dlgDebt').close());
 el('frmDebt').addEventListener('submit', e=>{
-  const who=el('ndWho').value.trim(), a=parseFloat(el('ndAmt').value);
+  const who=el('ndWho').value.trim(), a=numFR(el('ndAmt').value);
   if(!who||!isFinite(a)||a<=0){ e.preventDefault(); return; }
   debts().push({id:uid(), who, a:r2(a), d:el('ndDate').value||new Date().toISOString().slice(0,10),
                 n:el('ndNote').value.trim(), tx:null, paid:false, pd:null, rev:null, rk:null});
