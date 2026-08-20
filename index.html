@@ -231,6 +231,38 @@ input:focus,select:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0
 .tx{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border)}
 .tx[data-edittx],.tx[data-editrev]{cursor:pointer;border-radius:10px;transition:background .15s}
 .tx[data-edittx]:hover,.tx[data-editrev]:hover{background:var(--surface-2)}
+.tx[data-edittx],.tx[data-editrev]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.tx.sel{background:var(--brand-soft)}
+.tx.sel .ico{background:var(--brand);color:#fff}
+.tx.sel .n{color:var(--brand-ink)}
+body.selmode .tx[data-edittx],body.selmode .tx[data-editrev]{padding-left:2px}
+body.selmode .fab{opacity:0;pointer-events:none}
+
+#selWrap[hidden],#selTrash[hidden]{display:none!important}
+#selWrap{position:fixed;z-index:70;display:flex;flex-direction:column;align-items:flex-start;gap:10px;touch-action:none}
+#selBubble{width:58px;height:58px;border-radius:50%;background:var(--text);color:var(--surface);
+  display:grid;place-items:center;box-shadow:0 10px 30px -8px rgba(0,0,0,.55);cursor:grab;touch-action:none;flex:none}
+#selBubble:active{cursor:grabbing}
+#selCount{font-size:21px;font-weight:700;line-height:1}
+#selPanel{background:var(--surface);border:1px solid var(--border-strong);border-radius:16px;
+  box-shadow:var(--shadow-lg);padding:14px;width:min(272px,calc(100vw - 32px))}
+.sp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.sp-head b{font-size:14px;font-weight:650}
+.sp-head button{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;color:var(--text-3)}
+.sp-head button:hover{background:var(--surface-2);color:var(--text)}
+.sp-row{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:5px 0;border-bottom:1px solid var(--border)}
+.sp-row:last-of-type{border-bottom:none}
+.sp-row b{font-weight:700}
+.sp-tot{font-size:24px;font-weight:700;letter-spacing:-.02em;margin:8px 0 4px}
+.sp-acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.sp-acts button{flex:1 1 auto;padding:9px 12px;border-radius:10px;border:1px solid var(--border-strong);
+  background:var(--surface-2);font-size:13px;font-weight:650;white-space:nowrap}
+.sp-acts button:hover{background:var(--surface-3)}
+.sp-acts button.d{color:var(--crit)}
+#selTrash{position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);
+  width:66px;height:66px;border-radius:50%;background:var(--surface);color:var(--text-3);display:grid;place-items:center;
+  z-index:69;border:2px dashed var(--border-strong);transition:transform .15s, background .15s, color .15s}
+#selTrash.hot{background:var(--crit);color:#fff;border-color:transparent;transform:translateX(-50%) scale(1.18)}
 .tx:last-child{border-bottom:none}
 .tx .ico{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:16px;flex:none;background:var(--surface-3)}
 .tx .m{flex:1;min-width:0}
@@ -521,6 +553,12 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
   <p class="hint" style="text-align:center">Un point vert signale les mois où tu as saisi quelque chose.</p>
   <div class="dlg-actions"><button type="button" class="btn" id="mCancel">Fermer</button></div>
 </div></dialog>
+
+<div id="selWrap" hidden>
+  <div id="selPanel" hidden></div>
+  <button id="selBubble" aria-label="Sélection"><span id="selCount">0</span></button>
+</div>
+<div id="selTrash" hidden aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></div>
 
 <div class="toast" id="toast"><span id="toastMsg"></span></div>
 <script>
@@ -1102,7 +1140,8 @@ function renderTx(){
   const revs=(S.months[CUR]?.rev)||[];
   if(revs.length){
     revs.forEach(r=>{
-      html+=`<div class="tx${HILITE===r.id?' hl':''}" id="r-${r.id}" data-editrev="${r.id}"><div class="ico">💶</div><div class="m"><div class="n">${esc(r.l)}</div>${(r.n||r.pm)?`<div class="c">${[r.n?esc(r.n):'', r.pm?esc(r.pm):''].filter(Boolean).join(' · ')}</div>`:''}</div><div class="a tnum" style="color:var(--brand)">${sgn(r.a)}</div>
+      const selR=SEL.has('r:'+r.id);
+      html+=`<div class="tx${HILITE===r.id?' hl':''}${selR?' sel':''}" id="r-${r.id}" data-editrev="${r.id}"><div class="ico">${selR?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>':'💶'}</div><div class="m"><div class="n">${esc(r.l)}</div>${(r.n||r.pm)?`<div class="c">${[r.n?esc(r.n):'', r.pm?esc(r.pm):''].filter(Boolean).join(' · ')}</div>`:''}</div><div class="a tnum" style="color:var(--brand)">${sgn(r.a)}</div>
       <button class="del" data-delrev="${r.id}" aria-label="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>`;
     });
   } else html+='<div class="empty">Aucun revenu enregistré ce mois-ci.</div>';
@@ -1152,8 +1191,9 @@ function renderTx(){
       }
       const c=cat(t.c);
       const back=paidBack(t.id), net=netA(t), due=oweOf(t.id);
-      html+=`<div class="tx${HILITE===t.id?' hl':''}" id="r-${t.id}" data-edittx="${t.id}">
-        <div class="ico">${c.em}</div>
+      const selD=SEL.has('d:'+t.id);
+      html+=`<div class="tx${HILITE===t.id?' hl':''}${selD?' sel':''}" id="r-${t.id}" data-edittx="${t.id}">
+        <div class="ico">${selD?'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>':c.em}</div>
         <div class="m"><div class="n">${esc(t.n||t.c)}</div><div class="c" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">${[t.n?esc(t.c):(t.imp?"importé de l'Excel":''), t.s?esc(t.s):'', t.pm?esc(t.pm):''].filter(Boolean).join(' · ')}${due?`<span class="owe">${nfNum.format(due)} € dû</span>`:''}${back?`<span class="back">${nfNum.format(back)} € remboursés</span>`:''}</div></div>
         <div class="a tnum">${back?`<span class="gross">${nfNum.format(t.a)} €</span>`:''}${fmt(net)}</div>
         <button class="del" data-deltx="${t.id}" aria-label="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
@@ -1393,6 +1433,7 @@ function renderSet(){
 /* ===================== RENDU GLOBAL ===================== */
 function render(){
   bust();
+  if(SEL.size && TAB!=='tx') clearSel();
   const ms=allMonths();
   if(!CUR || ms.indexOf(CUR)<0) CUR=defaultMonth();
   renderHero();
@@ -1404,6 +1445,7 @@ function render(){
   else if(TAB==='debt') renderDebt();
   else if(TAB==='hist') renderHist();
   else renderSet();
+  if(SEL.size) renderBubble();
 }
 
 /* ===================== ÉVÉNEMENTS ===================== */
@@ -1521,6 +1563,161 @@ function openTx(kind, editId){
   setTimeout(()=>el('txAmount').focus(),50);
 }
 function ensureMonth(k){ if(!S.months[k]) S.months[k]={rev:[],adj:0,b:{}}; return S.months[k]; }
+
+/* ---------- sélection multiple par appui long ---------- */
+let SEL=new Set(), SELOPEN=false, BPOS=null, SUPPRESS=0;
+
+function selKey(row){ return row.dataset.edittx ? 'd:'+row.dataset.edittx : 'r:'+row.dataset.editrev; }
+function findRev(id){
+  for(const k of Object.keys(S.months)){
+    const r=(S.months[k].rev||[]).find(x=>x.id===id);
+    if(r) return {r,k};
+  }
+  return null;
+}
+function selSums(){
+  let d=0, r=0;
+  SEL.forEach(key=>{
+    const id=key.slice(2);
+    if(key[0]==='d'){ const t=S.tx.find(x=>x.id===id); if(t) d+=netA(t); }
+    else { const f=findRev(id); if(f) r+=f.r.a; }
+  });
+  return {d:r2(d), r:r2(r), n:SEL.size};
+}
+function toggleSel(key, force){
+  if(SEL.has(key) && !force) SEL.delete(key); else SEL.add(key);
+  if(!SEL.size) return clearSel();
+  document.body.classList.add('selmode');
+  renderTx(); renderBubble();
+}
+function clearSel(){
+  SEL.clear(); SELOPEN=false;
+  document.body.classList.remove('selmode');
+  el('selWrap').hidden=true;
+  if(TAB==='tx') renderTx();
+}
+function placeBubble(){
+  const w=el('selWrap');
+  if(!BPOS){
+    BPOS={x:16, y:Math.max(80, innerHeight-150)};
+  }
+  const r=w.getBoundingClientRect();
+  BPOS.x=Math.max(8, Math.min(innerWidth-(r.width||58)-8, BPOS.x));
+  BPOS.y=Math.max(8, Math.min(innerHeight-(r.height||58)-8, BPOS.y));
+  w.style.left=BPOS.x+'px'; w.style.top=BPOS.y+'px';
+}
+function renderBubble(){
+  const s=selSums();
+  if(!s.n){ el('selWrap').hidden=true; return; }
+  el('selWrap').hidden=false;
+  el('selCount').textContent=s.n;
+  const P=el('selPanel');
+  P.hidden=!SELOPEN;
+  if(SELOPEN){
+    const net=r2(s.r-s.d);
+    P.innerHTML=`
+      <div class="sp-head"><b>${s.n} opération${s.n>1?'s':''}</b>
+        <button type="button" data-selact="close" aria-label="Replier"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      ${s.d?`<div class="sp-row"><span>Dépenses</span><b>${fmt(s.d)}</b></div>`:''}
+      ${s.r?`<div class="sp-row"><span>Revenus</span><b style="color:var(--brand)">${fmt(s.r)}</b></div>`:''}
+      <div class="sp-tot tnum" style="color:${s.d&&!s.r?'var(--text)':net>=0?'var(--brand)':'var(--crit)'}">${s.d&&!s.r?fmt(s.d):(s.r&&!s.d?fmt(s.r):sgn(net))}</div>
+      <p class="hint" style="margin:0">${s.d&&s.r?'Différence entre revenus et dépenses sélectionnés.':'Total des montants sélectionnés.'}</p>
+      <div class="sp-acts">
+        <button type="button" data-selact="all">Tout</button>
+        <button type="button" data-selact="copy">Copier</button>
+        <button type="button" data-selact="del" class="d">Supprimer</button>
+      </div>`;
+  }
+  placeBubble();
+}
+function selAll(){
+  document.querySelectorAll('#p-tx .tx[data-edittx],#p-tx .tx[data-editrev]').forEach(r=>SEL.add(selKey(r)));
+  document.body.classList.add('selmode');
+  renderTx(); renderBubble();
+}
+function selDelete(){
+  const s=selSums();
+  snap('suppression multiple');
+  SEL.forEach(key=>{
+    const id=key.slice(2);
+    if(key[0]==='d'){
+      S.tx=S.tx.filter(x=>x.id!==id);
+      debts().filter(d=>d.tx===id && d.paid).forEach(d=>unpayDebt(d.id));
+      S.debts=debts().filter(d=>d.tx!==id);
+    } else {
+      const f=findRev(id);
+      if(f) S.months[f.k].rev=S.months[f.k].rev.filter(x=>x.id!==id);
+    }
+  });
+  clearSel(); save(); bust(); render();
+  toast(s.n+' opération'+(s.n>1?'s':'')+' supprimée'+(s.n>1?'s':''), true);
+}
+function selCopy(){
+  const s=selSums();
+  const txt = s.d&&!s.r ? nfNum.format(s.d) : (s.r&&!s.d ? nfNum.format(s.r) : nfNum.format(r2(s.r-s.d)));
+  const done=()=>toast('Total copié : '+txt+' €');
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done,()=>done());
+    else {
+      const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); done();
+    }
+  }catch(e){ toast('Total : '+txt+' €'); }
+}
+
+/* appui long sur une ligne */
+let lpT=null, lpFrom=null, lpMoved=false;
+document.addEventListener('pointerdown', e=>{
+  const row=e.target.closest('.tx[data-edittx],.tx[data-editrev]');
+  if(!row || e.target.closest('.del')) return;
+  lpFrom={x:e.clientX,y:e.clientY}; lpMoved=false;
+  clearTimeout(lpT);
+  lpT=setTimeout(()=>{
+    lpT=null;
+    if(lpMoved) return;
+    SUPPRESS=Date.now();
+    toggleSel(selKey(row), true);
+    if(navigator.vibrate) try{ navigator.vibrate(18); }catch(e2){}
+  }, 550);
+}, {passive:true});
+document.addEventListener('pointermove', e=>{
+  if(!lpFrom) return;
+  if(Math.abs(e.clientX-lpFrom.x)>10||Math.abs(e.clientY-lpFrom.y)>10){ lpMoved=true; clearTimeout(lpT); }
+}, {passive:true});
+['pointerup','pointercancel'].forEach(ev=>document.addEventListener(ev, ()=>{ clearTimeout(lpT); lpFrom=null; }, {passive:true}));
+
+/* déplacement de la bulle */
+let bdrag=null;
+function overTrash(e){
+  const t=el('selTrash'); if(t.hidden) return false;
+  const r=t.getBoundingClientRect();
+  return e.clientX>r.left-24 && e.clientX<r.right+24 && e.clientY>r.top-24 && e.clientY<r.bottom+24;
+}
+el('selBubble').addEventListener('pointerdown', e=>{
+  const r=el('selWrap').getBoundingClientRect();
+  bdrag={dx:e.clientX-r.left, dy:e.clientY-r.top, x0:e.clientX, y0:e.clientY, moved:false};
+  try{ el('selBubble').setPointerCapture(e.pointerId); }catch(err){}
+});
+el('selBubble').addEventListener('pointermove', e=>{
+  if(!bdrag) return;
+  if(!bdrag.moved && (Math.abs(e.clientX-bdrag.x0)>7||Math.abs(e.clientY-bdrag.y0)>7)){
+    bdrag.moved=true; SELOPEN=false; renderBubble(); el('selTrash').hidden=false;
+  }
+  if(!bdrag.moved) return;
+  BPOS={x:e.clientX-bdrag.dx, y:e.clientY-bdrag.dy};
+  placeBubble();
+  el('selTrash').classList.toggle('hot', overTrash(e));
+});
+['pointerup','pointercancel'].forEach(ev=>el('selBubble').addEventListener(ev, e=>{
+  if(!bdrag) return;
+  const moved=bdrag.moved, sur=overTrash(e);
+  bdrag=null;
+  el('selTrash').hidden=true; el('selTrash').classList.remove('hot');
+  if(!moved){ SELOPEN=!SELOPEN; renderBubble(); }
+  else if(sur){ clearSel(); toast('Sélection annulée'); }
+}));
+addEventListener('resize', ()=>{ if(SEL.size) placeBubble(); });
 
 /* ---------- réorganisation en catégories / sous-catégories ---------- */
 function applyStructure(){
@@ -1722,7 +1919,8 @@ function renderPicker(){
 }
 
 document.addEventListener('click', e=>{
-  const t=e.target.closest('[data-tab],[data-act],[data-filter],[data-deltx],[data-delrev],[data-goto],[data-hcat],[data-cdel],[data-c],[data-rmode],[data-jump],[data-catf],[data-kind],[data-rl],[data-res],[data-share],[data-pay],[data-unpay],[data-deldebt],[data-drm],[data-edittx],[data-editrev],[data-undo],[data-gtog],[data-ctog],[data-s],[data-pm],[data-subdel],[data-subadd],[data-scat],[data-subf]');
+  if(Date.now()-SUPPRESS < 500) return;   /* clic issu d'un appui long */
+  const t=e.target.closest('[data-tab],[data-act],[data-filter],[data-deltx],[data-delrev],[data-goto],[data-hcat],[data-cdel],[data-c],[data-rmode],[data-jump],[data-catf],[data-kind],[data-rl],[data-res],[data-share],[data-pay],[data-unpay],[data-deldebt],[data-drm],[data-edittx],[data-editrev],[data-undo],[data-gtog],[data-ctog],[data-s],[data-pm],[data-selact],[data-subdel],[data-subadd],[data-scat],[data-subf]');
   if(!t) return;
   if(t.dataset.gtog){ OPEN[t.dataset.gtog]=!OPEN[t.dataset.gtog]; renderDash(); return; }
   if(t.dataset.ctog){ const k='c:'+t.dataset.ctog; OPEN[k]=!OPEN[k]; renderDash(); return; }
@@ -1758,8 +1956,22 @@ document.addEventListener('click', e=>{
   }
   if(t.dataset.undo!==undefined){ undo(); return; }
   if(t.dataset.drm!==undefined){ DROWS.splice(+t.dataset.drm,1); if(SHARE!=='custom') applyShare(); else renderDebtRows(); return; }
-  if(t.dataset.edittx){ openTx('dep', t.dataset.edittx); return; }
-  if(t.dataset.editrev){ openTx('rev', t.dataset.editrev); return; }
+  if(t.dataset.edittx){
+    if(SEL.size){ toggleSel('d:'+t.dataset.edittx); return; }
+    openTx('dep', t.dataset.edittx); return;
+  }
+  if(t.dataset.editrev){
+    if(SEL.size){ toggleSel('r:'+t.dataset.editrev); return; }
+    openTx('rev', t.dataset.editrev); return;
+  }
+  if(t.dataset.selact){
+    const a2=t.dataset.selact;
+    if(a2==='close'){ SELOPEN=false; renderBubble(); }
+    else if(a2==='all'){ selAll(); }
+    else if(a2==='copy'){ selCopy(); }
+    else if(a2==='del'){ selDelete(); }
+    return;
+  }
   if(t.dataset.share){ setShare(t.dataset.share); return; }
   if(t.dataset.pay){ payDebt(t.dataset.pay); return; }
   if(t.dataset.unpay){ unpayDebt(t.dataset.unpay); return; }
@@ -1788,7 +2000,7 @@ document.addEventListener('click', e=>{
     return;
   }
   if(t.dataset.rmode){ S.reportMode=t.dataset.rmode; save(); bust(); render(); return; }
-  if(t.dataset.tab){ TAB=t.dataset.tab; FILTER=null; FSUB=null; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
+  if(t.dataset.tab){ if(SEL.size) clearSel(); TAB=t.dataset.tab; FILTER=null; FSUB=null; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
   if(t.dataset.c!==undefined && t.closest('#txCats')){
     el('txCats').querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed', String(b===t)));
     SUBSEL=''; renderSubChips();
@@ -2002,8 +2214,8 @@ el('qInput').addEventListener('keydown',e=>{
 el('mCancel').addEventListener('click',()=>el('dlgMonth').close());
 el('yPrev').addEventListener('click',()=>{PICKY--;renderPicker();});
 el('yNext').addEventListener('click',()=>{PICKY++;renderPicker();});
-el('prevM').addEventListener('click',()=>{ const ms=allMonths(),i=ms.indexOf(CUR); if(i>0){CUR=ms[i-1];render();} });
-el('nextM').addEventListener('click',()=>{ const ms=allMonths(),i=ms.indexOf(CUR); if(i<ms.length-1){CUR=ms[i+1];render();} });
+el('prevM').addEventListener('click',()=>{ if(SEL.size) clearSel(); const ms=allMonths(),i=ms.indexOf(CUR); if(i>0){CUR=ms[i-1];render();} });
+el('nextM').addEventListener('click',()=>{ if(SEL.size) clearSel(); const ms=allMonths(),i=ms.indexOf(CUR); if(i<ms.length-1){CUR=ms[i+1];render();} });
 el('themeBtn').addEventListener('click',()=>{
   const cur=document.documentElement.getAttribute('data-theme')||
     (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
