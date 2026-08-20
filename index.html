@@ -166,6 +166,22 @@ main{padding-top:18px}
 :root[data-theme="dark"] .pill.warn{background:#3a2e12;color:#f5c86a}
 :root[data-theme="dark"] .pill.crit{background:#3a1e1e;color:#f09a9a}
 .gcard{border-top:4px solid var(--gc);padding-top:15px}
+.ghead{cursor:pointer;border-radius:10px;transition:background .15s}
+.ghead:hover{background:var(--surface-2)}
+.gchev{flex:none;color:var(--text-3);transition:transform .2s}
+.gcard.open .gchev,.brow-btn.open .brow-chev{transform:rotate(90deg)}
+.subs{padding:2px 0 6px 30px;margin-top:-2px}
+.srow{display:flex;align-items:center;gap:9px;width:100%;padding:8px 8px 8px 0;border-radius:9px;text-align:left;cursor:pointer;transition:background .15s;position:relative}
+.srow:hover{background:var(--surface-2)}
+.srow::before{content:'';position:absolute;left:-14px;top:0;bottom:0;width:2px;background:var(--border);border-radius:2px}
+.srow .sn{flex:1;min-width:0;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow .sc{font-size:11.5px;color:var(--text-3);font-weight:500}
+.srow .sa{font-weight:650;font-size:13.5px;white-space:nowrap}
+.srow .schev{opacity:.35;flex:none}
+.srow.all{font-style:normal}
+.srow.all .sn{color:var(--text-3);font-weight:600}
+.subedit{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.subedit:last-of-type{border-bottom:none}
 .gcard.gi{--gc:var(--indisp);--gcink:var(--indisp-ink);--gcsoft:var(--indisp-soft)}
 .gcard.gl{--gc:var(--loisir);--gcink:var(--loisir-ink);--gcsoft:var(--loisir-soft)}
 .ghead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
@@ -409,6 +425,10 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
     <div id="wrapCats">
       <label class="f">Catégorie</label>
       <div class="chips" id="txCats"></div>
+      <div id="wrapSubs" hidden style="margin-top:11px">
+        <label class="f">Sous-catégorie <span style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--text-3)">(facultatif)</span></label>
+        <div class="chips" id="txSubs"></div>
+      </div>
     </div>
     <div id="wrapRev" hidden>
       <label class="f">Type de revenu</label>
@@ -431,6 +451,10 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
         <p class="hint" id="debtLeft" style="margin-top:0"></p>
         <datalist id="whoList"></datalist>
       </div>
+    </div>
+    <div>
+      <label class="f">Moyen de paiement <span style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--text-3)">(facultatif)</span></label>
+      <div class="chips" id="txPay"></div>
     </div>
     <div class="row2" id="rowDate">
       <div><label class="f" for="txDate">Date</label><input id="txDate" type="date" required></div>
@@ -504,17 +528,33 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
 const SEED={"solde0":0,"m":[]};
 
 const CAT_DEF = [
-  {id:'Courses',   em:'🛒', grp:'i', budget:84},
-  {id:'Factures',  em:'🧾', grp:'i', budget:38},
-  {id:'Santé',     em:'💊', grp:'i', budget:30},
-  {id:'Voiture',   em:'🚗', grp:'i', budget:80},
-  {id:'Nori',      em:'🐾', grp:'i', budget:25},
-  {id:'Sorties',   em:'🍸', grp:'l', budget:50},
-  {id:'Shopping',  em:'🛍️', grp:'l', budget:50},
-  {id:'Cadeaux',   em:'🎁', grp:'l', budget:0},
-  {id:'Voyage',    em:'✈️', grp:'l', budget:0},
-  {id:'Divers',    em:'✨', grp:'l', budget:0},
+  {id:'Courses',   em:'🛒', grp:'i', budget:84, subs:[]},
+  {id:'Factures',  em:'🧾', grp:'i', budget:38, subs:[]},
+  {id:'Santé',     em:'💊', grp:'i', budget:30, subs:[]},
+  {id:'Voiture',   em:'🚗', grp:'i', budget:80, subs:[]},
+  {id:'Nori',      em:'🐾', grp:'i', budget:25, subs:[]},
+  {id:'Sorties',   em:'🍸', grp:'l', budget:50, subs:[]},
+  {id:'Shopping',  em:'🛍️', grp:'l', budget:50, subs:[]},
+  {id:'Cadeaux',   em:'🎁', grp:'l', budget:0,  subs:[]},
+  {id:'Voyage',    em:'✈️', grp:'l', budget:0,  subs:[]},
+  {id:'Divers',    em:'✨', grp:'l', budget:0,  subs:[]},
 ];
+/* organisation proposée : catégories et sous-catégories.
+   « from » liste les anciens noms à absorber ; « ren » traduit un ancien nom en sous-catégorie. */
+const STRUCT = [
+  {id:'Voiture',     em:'🚗', grp:'i', subs:['Essence','Entretien','Assurance'], from:['Voiture','Essence','Parking','PV','Assurance'], ren:{}},
+  {id:'Animaux',     em:'🐾', grp:'i', subs:['Nourriture','Vétérinaire'],        from:['Animaux','Nori'], ren:{}},
+  {id:'Alimentaire', em:'🍽️', grp:'i', subs:['Courses','Dîner boulot'],          from:['Alimentaire','Courses'], ren:{}},
+  {id:'Factures',    em:'🧾', grp:'i', subs:['Alain','Mutuelle'],                from:['Factures','Mutuelle'], ren:{}},
+  {id:'Santé',       em:'💊', grp:'i', subs:[],                                  from:['Santé'], ren:{}},
+  {id:'Sorties',     em:'🍸', grp:'l', subs:['Restaurant','Fast-food'],          from:['Sorties','Activité'], ren:{}},
+  {id:'Shopping',    em:'🛍️', grp:'l', subs:['Vêtements','Soins de soi'],        from:['Shopping','Vetements','Coiffeur','Action'], ren:{'Vetements':'Vêtements','Coiffeur':'Soins de soi'}},
+  {id:'Cadeaux',     em:'🎁', grp:'l', subs:['Anniversaire','Noël'],             from:['Cadeaux'], ren:{}},
+  {id:'Voyages',     em:'✈️', grp:'l', subs:['Las Vegas','Toscane'],             from:['Voyages','Voyage','Nourriture vacances'], ren:{}},
+  {id:'Divers',      em:'✨', grp:'l', subs:[],                                  from:['Divers','Formations'], ren:{}},
+];
+const STRUCT_CATS = STRUCT.map(s=>({id:s.id, em:s.em, grp:s.grp, budget:0, report:true, subs:[...s.subs]}));
+const PAY = ['Bancontact','Espèces'];
 const GRP_NAME = {i:'Indispensables', l:'Loisirs'};
 const KEY = 'finances_v2';
 
@@ -534,6 +574,12 @@ function buildFromSeed(){
       st.tx.push({id:uid(), d:m.k+'-01', c:t[0], a:t[1], n:t[2]||'', imp:1});
     });
   });
+  if(!SEED.m.length){
+    st.cats = STRUCT_CATS.map(c=>({...c, subs:[...c.subs]}));
+    const B={Voiture:80, Animaux:25, Alimentaire:84, Factures:38, 'Santé':30, Sorties:50, Shopping:50};
+    st.cats.forEach(c=>{ c.budget = B[c.id]||0; });
+    st.structApplied = true;
+  }
   return st;
 }
 function load(){
@@ -579,7 +625,7 @@ function deMois(k){ const s=mLabel(k,true); return (/^[aeiouyâêîôûéè]/i.t
 function addM(k,n){ const [y,m]=k.split('-').map(Number); const d=new Date(y,m-1+n,1); return mKey(d); }
 function cmpM(a,b){ return a<b?-1:a>b?1:0; }
 function daysIn(k){ const [y,m]=k.split('-').map(Number); return new Date(y,m,0).getDate(); }
-function cat(id){ return S.cats.find(c=>c.id===id) || {id, em:'•', grp:'l', budget:0, report:true}; }
+function cat(id){ return S.cats.find(c=>c.id===id) || {id, em:'•', grp:'l', budget:0, report:true, subs:[]}; }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function el(id){ return document.getElementById(id); }
 let toastT;
@@ -627,11 +673,16 @@ function agg(k){
   if(!CACHE.ag) CACHE.ag={};
   if(CACHE.ag[k]) return CACHE.ag[k];
   const M = S.months[k] || {rev:[],adj:0,b:{}};
-  const byCat={}, byGrp={i:0,l:0};
+  const byCat={}, byGrp={i:0,l:0}, bySub={}, nbSub={};
   let dep=0;
-  txOf(k).forEach(t=>{ const v=netA(t); byCat[t.c]=(byCat[t.c]||0)+v; dep+=v; byGrp[cat(t.c).grp]+=v; });
+  txOf(k).forEach(t=>{
+    const v=netA(t);
+    byCat[t.c]=(byCat[t.c]||0)+v; dep+=v; byGrp[cat(t.c).grp]+=v;
+    const key=t.c+'\u0000'+(t.s||'');
+    bySub[key]=(bySub[key]||0)+v; nbSub[key]=(nbSub[key]||0)+1;
+  });
   const rev = (M.rev||[]).reduce((s,r)=>s+r.a,0);
-  const a = {rev:r2(rev), dep:r2(dep), byCat, byGrp, adj:M.adj||0, epargne:r2(rev-dep)};
+  const a = {rev:r2(rev), dep:r2(dep), byCat, byGrp, bySub, nbSub, adj:M.adj||0, epargne:r2(rev-dep)};
   CACHE.ag[k]=a; return a;
 }
 function soldes(){
@@ -840,7 +891,10 @@ function groupedChart(host, pts){
 let CUR = null;          // mois sélectionné
 let TAB = 'dash';
 let FILTER = null;       // filtre catégorie (onglet Dépenses)
+let FSUB = null;         // filtre sous-catégorie
+let OPEN = {i:true, l:true};   // sections dépliées sur l'accueil
 let HCAT = 'Courses';    // catégorie suivie dans l'historique
+let SCAT = null;         // catégorie dont on édite les sous-catégories
 
 function defaultMonth(){
   const ms=allMonths(), tk=mKey(new Date());
@@ -882,6 +936,11 @@ function renderDash(){
 
   let html='';
 
+  if(!S.structApplied && S.tx.length){
+    html+=`<div class="banner"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:1px" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M7 12h14M11 18h10"/></svg>
+      <div><b>Nouveau : les sous-catégories.</b> Je peux réorganiser tes catégories comme convenu (Voiture, Animaux, Alimentaire, Factures, Santé / Sorties, Shopping, Cadeaux, Voyages, Divers) sans perdre une seule dépense.
+      <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap"><button class="btn sm primary" data-act="struct">Réorganiser</button><button class="btn sm" data-act="nostruct">Plus tard</button></div></div></div>`;
+  }
   const owed=oweTotal();
   if(owed>0){
     html+=`<button class="banner owe-b" data-tab="debt" style="width:100%;text-align:left">
@@ -929,31 +988,42 @@ function renderDash(){
     l:{cls:'gl', nom:'Loisirs', sous:'Ce qui fait plaisir',
        ico:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.35-9.33-8.5A5.2 5.2 0 0 1 12 6.5a5.2 5.2 0 0 1 9.33 6C19 16.65 12 21 12 21z"/></svg>'}
   };
+  const CHEVD='<svg class="gchev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
   ['i','l'].forEach(g=>{
     const cs=S.cats.filter(c=>c.grp===g);
     if(!cs.length) return;
     const gd=r2(cs.reduce((s,c)=>s+R[c.id].dep,0)), gb=r2(cs.reduce((s,c)=>s+Math.max(0,R[c.id].dispo),0));
-    const M=GMETA[g];
-    html+=`<div class="card gcard ${M.cls}">
-      <div class="ghead">
+    const M=GMETA[g], ouvert=!!OPEN[g];
+    html+=`<div class="card gcard ${M.cls}${ouvert?' open':''}">
+      <div class="ghead" data-gtog="${g}" role="button" aria-expanded="${ouvert}">
         <span class="gicon">${M.ico}</span>
         <div class="gt"><h2>${M.nom}</h2><p class="gs">${M.sous}</p></div>
         <div class="gv tnum">${fmt(gd)}${gb>0?`<span>sur ${fmt(gb)}</span>`:''}</div>
+        ${CHEVD}
       </div>`;
     if(gb>0){
       const gp=Math.min(100, gd/gb*100);
       const gst=statusOf(gd,gb,prog);
-      html+=`<div class="track" style="height:10px;margin-bottom:16px"><div class="fill" style="width:${gp}%;background:${gp>=100?'var(--crit)':gst==='warn'?'var(--warn)':'var(--gc)'}"></div></div>`;
+      html+=`<div class="track" style="height:10px;margin:12px 0 4px"><div class="fill" style="width:${gp}%;background:${gp>=100?'var(--crit)':gst==='warn'?'var(--warn)':'var(--gc)'}"></div></div>`;
     }
+    if(!ouvert){ html+='</div>'; return; }
     cs.slice().sort((x,y)=>R[y.id].dep-R[x.id].dep).forEach(c=>{
       const r=R[c.id];
       const p = r.dispo>0 ? Math.min(100, r.dep/r.dispo*100) : (r.dep>0?100:0);
       const s2 = statusOf(r.dep, r.dispo, prog);
       const col = s2==='crit'?'var(--crit)':s2==='warn'?'var(--warn)':'var(--gc)';
-      const clic = r.dep>0.005;
-      html+=`<${clic?'button type="button" class="brow brow-btn" data-catf="'+esc(c.id)+'"':'div class="brow"'}>
+      /* sous-catégories réellement utilisées ce mois-ci */
+      const used=[];
+      Object.keys(a.bySub||{}).forEach(k2=>{
+        const [cc,ss]=k2.split('\u0000');
+        if(cc===c.id && Math.abs(a.bySub[k2])>0.005) used.push({s:ss, v:r2(a.bySub[k2]), n:a.nbSub[k2]});
+      });
+      used.sort((x,y)=>y.v-x.v);
+      const depliable = used.some(u=>u.s) || used.length>1;
+      const ouv = !!OPEN['c:'+c.id];
+      html+=`<${depliable?`button type="button" class="brow brow-btn${ouv?' open':''}" data-ctog="${esc(c.id)}"`:'div class="brow"'}>
         <div class="brow-head">
-          <div class="brow-name"><span class="em">${c.em}</span>${esc(c.id)}${clic?CHEV_S:''}</div>
+          <div class="brow-name"><span class="em">${c.em}</span>${esc(c.id)}${depliable?CHEV_S:''}</div>
           <div class="brow-val tnum"><b>${fmt(r.dep)}</b>${r.dispo>0?' / '+fmt(r.dispo):''}</div>
         </div>
         <div class="track"><div class="fill" style="width:${p}%;background:${col}"></div></div>
@@ -961,7 +1031,21 @@ function renderDash(){
           <span>${r.budget>0||r.report? 'Budget '+nfNum.format(r.budget)+' €'+(r.report? (r.report>0?' + ':' − ')+nfNum.format(Math.abs(r.report))+' € reportés':'') : 'Sans budget'}</span>
           <span class="tnum" style="color:${r.reste<0?'var(--crit)':'var(--text-3)'}">${r.dispo>0? (r.reste<0? nfNum.format(-r.reste)+' € de trop' : 'reste '+fmt(r.reste)) : (r.dep>0&&r.budget>0?'budget épuisé':'')}</span>
         </div>
-      </${clic?'button':'div'}>`;
+      </${depliable?'button':'div'}>`;
+      if(depliable && ouv){
+        html+='<div class="subs">';
+        used.forEach(u=>{
+          html+=`<button type="button" class="srow" data-catf="${esc(c.id)}" data-subf="${esc(u.s)}">
+            <span class="sn">${u.s?esc(u.s):'Sans sous-catégorie'}<span class="sc"> · ${u.n} opération${u.n>1?'s':''}</span></span>
+            <span class="sa tnum">${fmt(u.v)}</span>
+            <svg class="schev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </button>`;
+        });
+        html+=`<button type="button" class="srow all" data-catf="${esc(c.id)}">
+          <span class="sn">Voir toutes les dépenses</span>
+          <svg class="schev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button></div>`;
+      }
     });
     html+='</div>';
   });
@@ -1007,7 +1091,7 @@ function renderSplit(host, a){
 function renderTx(){
   const a=agg(CUR);
   const list=txOf(CUR).slice().sort((x,y)=> x.d===y.d ? 0 : (x.d<y.d?1:-1));
-  const shown=FILTER? list.filter(t=>t.c===FILTER) : list;
+  const shown=FILTER? list.filter(t=>t.c===FILTER && (FSUB===null || (t.s||'')===FSUB)) : list;
   let html='';
 
   html+=`<div class="card" id="cardRev">
@@ -1018,7 +1102,7 @@ function renderTx(){
   const revs=(S.months[CUR]?.rev)||[];
   if(revs.length){
     revs.forEach(r=>{
-      html+=`<div class="tx${HILITE===r.id?' hl':''}" id="r-${r.id}" data-editrev="${r.id}"><div class="ico">💶</div><div class="m"><div class="n">${esc(r.l)}</div>${r.n?`<div class="c">${esc(r.n)}</div>`:''}</div><div class="a tnum" style="color:var(--brand)">${sgn(r.a)}</div>
+      html+=`<div class="tx${HILITE===r.id?' hl':''}" id="r-${r.id}" data-editrev="${r.id}"><div class="ico">💶</div><div class="m"><div class="n">${esc(r.l)}</div>${(r.n||r.pm)?`<div class="c">${[r.n?esc(r.n):'', r.pm?esc(r.pm):''].filter(Boolean).join(' · ')}</div>`:''}</div><div class="a tnum" style="color:var(--brand)">${sgn(r.a)}</div>
       <button class="del" data-delrev="${r.id}" aria-label="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>`;
     });
   } else html+='<div class="empty">Aucun revenu enregistré ce mois-ci.</div>';
@@ -1035,9 +1119,25 @@ function renderTx(){
   S.cats.forEach(c=>{
     const v=r2(a.byCat[c.id]||0);
     if(!v && FILTER!==c.id) return;
-    html+=`<button class="chip" data-filter="${esc(c.id)}" aria-pressed="${FILTER===c.id}">${c.em} ${esc(c.id)} · ${nfNum.format(v)} €</button>`;
+    html+=`<button class="chip" data-filter="${esc(c.id)}" aria-pressed="${FILTER===c.id&&FSUB===null}">${c.em} ${esc(c.id)} · ${nfNum.format(v)} €</button>`;
   });
   html+='</div>';
+  if(FILTER){
+    const cc=cat(FILTER);
+    const used=[];
+    Object.keys(a.bySub||{}).forEach(k2=>{
+      const [c1,s1]=k2.split('\u0000');
+      if(c1===FILTER && Math.abs(a.bySub[k2])>0.005) used.push({s:s1, v:r2(a.bySub[k2])});
+    });
+    used.sort((x,y)=>y.v-x.v);
+    if(used.length>1 || (used.length===1 && used[0].s)){
+      html+=`<div class="chips" style="margin:2px 0 6px">`;
+      used.forEach(u=>{
+        html+=`<button class="chip" style="font-size:12.5px;padding:6px 11px" data-filter="${esc(FILTER)}" data-subf="${esc(u.s)}" aria-pressed="${FSUB===u.s}">${u.s?esc(u.s):'Sans sous-catégorie'} · ${nfNum.format(u.v)} €</button>`;
+      });
+      html+='</div>';
+    }
+  }
 
   if(!shown.length){
     html+='<div class="empty"><span class="big">🌿</span>Aucune dépense ici. Appuie sur « Dépense » pour en ajouter une.</div>';
@@ -1054,7 +1154,7 @@ function renderTx(){
       const back=paidBack(t.id), net=netA(t), due=oweOf(t.id);
       html+=`<div class="tx${HILITE===t.id?' hl':''}" id="r-${t.id}" data-edittx="${t.id}">
         <div class="ico">${c.em}</div>
-        <div class="m"><div class="n">${esc(t.n||t.c)}</div><div class="c" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">${t.n?esc(t.c):(t.imp?"importé de l'Excel":'')}${due?`<span class="owe">${nfNum.format(due)} € dû</span>`:''}${back?`<span class="back">${nfNum.format(back)} € remboursés</span>`:''}</div></div>
+        <div class="m"><div class="n">${esc(t.n||t.c)}</div><div class="c" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">${[t.n?esc(t.c):(t.imp?"importé de l'Excel":''), t.s?esc(t.s):'', t.pm?esc(t.pm):''].filter(Boolean).join(' · ')}${due?`<span class="owe">${nfNum.format(due)} € dû</span>`:''}${back?`<span class="back">${nfNum.format(back)} € remboursés</span>`:''}</div></div>
         <div class="a tnum">${back?`<span class="gross">${nfNum.format(t.a)} €</span>`:''}${fmt(net)}</div>
         <button class="del" data-deltx="${t.id}" aria-label="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
       </div>`;
@@ -1240,6 +1340,27 @@ function renderSet(){
   const totB=S.cats.reduce((s,c)=>s+(c.budget||0),0);
   html+=`<div class="kv" style="margin-top:14px"><span>Budget total mensuel</span><b class="tnum">${fmt(totB)}</b></div></div>`;
 
+  html+=`<div class="card"><h2>Sous-catégories</h2><p class="sub">Choisis une catégorie pour gérer son détail. Une sous-catégorie n'apparaît sur l'accueil que si tu as dépensé dessus dans le mois.</p>
+    <div class="chips" style="margin-bottom:14px">`;
+  S.cats.forEach(c=>{
+    const n=(c.subs||[]).length;
+    html+=`<button class="chip" data-scat="${esc(c.id)}" aria-pressed="${SCAT===c.id}">${c.em} ${esc(c.id)}${n?` · ${n}`:''}</button>`;
+  });
+  html+='</div>';
+  const sc = S.cats.find(c=>c.id===SCAT) || S.cats[0];
+  if(sc){
+    (sc.subs||[]).forEach(s=>{
+      const n=S.tx.filter(x=>x.c===sc.id && (x.s||'')===s).length;
+      html+=`<div class="subedit">
+        <div><div style="font-size:14.5px;font-weight:600">${esc(s)}</div><div class="small">${n} opération${n>1?'s':''}</div></div>
+        <button class="del" style="opacity:.6" data-subdel="${esc(sc.id)}\u0000${esc(s)}" aria-label="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+      </div>`;
+    });
+    if(!(sc.subs||[]).length) html+=`<p class="small" style="margin:0 0 12px">Aucune sous-catégorie dans « ${esc(sc.id)} ».</p>`;
+    html+=`<button class="btn sm" style="margin-top:12px" data-subadd="${esc(sc.id)}">+ Sous-catégorie dans « ${esc(sc.id)} »</button>`;
+  }
+  html+='</div>';
+
   html+=`<div class="card"><h2>Budgets exceptionnels — ${mLabel(CUR,true)}</h2><p class="sub">Modifie le budget pour ce mois uniquement (vide = budget habituel).</p>`;
   S.cats.forEach(c=>{
     const ov=(S.months[CUR]&&S.months[CUR].b&&S.months[CUR].b[c.id]!=null)?S.months[CUR].b[c.id]:'';
@@ -1257,6 +1378,7 @@ function renderSet(){
       <button class="btn primary" data-act="export">Exporter mes données</button>
       <button class="btn" data-act="import">Importer un fichier</button>
       <button class="btn" data-act="csv">Exporter en CSV</button>
+      <button class="btn" data-act="struct">Réorganiser en sous-catégories</button>
       <button class="btn" data-undo="">Annuler la dernière action</button>
       <button class="btn danger" data-act="reset">Tout effacer</button>
     </div>
@@ -1285,6 +1407,15 @@ function render(){
 }
 
 /* ===================== ÉVÉNEMENTS ===================== */
+let SUBSEL='', PMSEL='';
+function renderSubChips(){
+  const sel=el('txCats').querySelector('[aria-pressed="true"]');
+  const c=sel? cat(sel.dataset.c) : null;
+  const subs=(c&&c.subs)||[];
+  el('wrapSubs').hidden = !(KIND==='dep' && subs.length);
+  el('txSubs').innerHTML = subs.map(s=>`<button type="button" class="chip" data-s="${esc(s)}" aria-pressed="${SUBSEL===s}">${esc(s)}</button>`).join('');
+  el('txPay').querySelectorAll('[data-pm]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.pm===PMSEL)));
+}
 const REV_PRESETS=['Salaire','Chèques repas','Prime','Remboursement','Autre'];
 let KIND='dep', EDIT=null;
 function setKind(k){
@@ -1294,6 +1425,7 @@ function setKind(k){
   el('wrapRev').hidden  = k!=='rev';
   el('wrapNote').hidden = false;
   el('wrapDebt').hidden = k!=='dep';
+  if(el('txSubs').innerHTML!==undefined) el('wrapSubs').hidden = k!=='dep' || !el('txSubs').innerHTML;
   if(!EDIT) el('txTitle').textContent = k==='dep' ? 'Nouvelle dépense' : 'Nouveau revenu';
 }
 let SHARE='equal', DROWS=[];
@@ -1342,12 +1474,13 @@ function toggleDebt(){
 }
 function openTx(kind, editId){
   EDIT=null;
-  el('txAmount').value=''; el('txNote').value=''; el('revLbl2').value='';
+  el('txAmount').value=''; el('txNote').value=''; el('revLbl2').value=''; SUBSEL=''; PMSEL='';
   el('debtOn').checked=false; el('debtFields').hidden=true; DROWS=[]; SHARE='equal';
   el('debtList').innerHTML=''; el('debtLeft').textContent='';
   const today=new Date(), tk=mKey(today);
   el('txDate').value = (CUR===tk) ? today.toISOString().slice(0,10) : CUR+'-15';
   el('txCats').innerHTML=S.cats.map((c,i)=>`<button type="button" class="chip" data-c="${esc(c.id)}" aria-pressed="${i===0}">${c.em} ${esc(c.id)}</button>`).join('');
+  el('txPay').innerHTML=PAY.map(p=>`<button type="button" class="chip" data-pm="${esc(p)}">${esc(p)}</button>`).join('');
   el('revChips').innerHTML=REV_PRESETS.map(l=>`<button type="button" class="chip" data-rl="${esc(l)}">${esc(l)}</button>`).join('');
   el('whoList').innerHTML=people().map(w=>`<option value="${esc(w)}">`).join('');
   document.querySelectorAll('[data-share]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.share==='equal')));
@@ -1359,6 +1492,7 @@ function openTx(kind, editId){
       el('txAmount').value=String(t.a).replace('.',',');
       el('txDate').value=t.d; el('txNote').value=t.n||'';
       el('txCats').querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.c===t.c)));
+      SUBSEL=t.s||''; PMSEL=t.pm||'';
       const ds=debts().filter(d=>d.tx===t.id && !d.paid);
       if(ds.length){
         DROWS=ds.map(d=>({who:d.who, a:String(d.a).replace('.',',')}));
@@ -1373,10 +1507,11 @@ function openTx(kind, editId){
     if(found){
       EDIT={kind:'rev', id:found.id, k:fk};
       el('txAmount').value=String(found.a).replace('.',',');
-      el('revLbl2').value=found.l||''; el('txNote').value=found.n||'';
+      el('revLbl2').value=found.l||''; el('txNote').value=found.n||''; PMSEL=found.pm||'';
       el('txDate').value=fk+'-15';
     }
   }
+  renderSubChips();
   setKind(EDIT ? EDIT.kind : (kind||'dep'));
   el('txTitle').textContent = EDIT
     ? (EDIT.kind==='dep' ? 'Modifier la dépense' : 'Modifier le revenu')
@@ -1386,6 +1521,55 @@ function openTx(kind, editId){
   setTimeout(()=>el('txAmount').focus(),50);
 }
 function ensureMonth(k){ if(!S.months[k]) S.months[k]={rev:[],adj:0,b:{}}; return S.months[k]; }
+
+/* ---------- réorganisation en catégories / sous-catégories ---------- */
+function applyStructure(){
+  snap('réorganisation des catégories');
+  const ordre=[];
+  STRUCT.forEach(st=>{
+    let target=S.cats.find(c=>c.id===st.id);
+    const srcs=st.from.map(f=>S.cats.find(c=>c.id===f)).filter(Boolean);
+    if(!target){
+      const base=srcs[0];
+      target={id:st.id, em:st.em, grp:st.grp, budget:base?(base.budget||0):0,
+              report:base?base.report!==false:true, subs:[]};
+      S.cats.push(target);
+    }
+    target.grp=st.grp;
+    if(!target.em||target.em==='•') target.em=st.em;
+    target.subs=[...new Set([...(target.subs||[]), ...st.subs])];
+    st.from.forEach(f=>{
+      if(f===st.id) return;
+      const src=S.cats.find(c=>c.id===f);
+      S.tx.forEach(t=>{
+        if(t.c===f){
+          t.c=st.id;
+          if(!t.s) t.s = st.subs.includes(f) ? f : (st.ren[f] || '');
+        }
+      });
+      Object.values(S.months).forEach(m=>{
+        if(m.b && m.b[f]!=null){ if(m.b[st.id]==null) m.b[st.id]=m.b[f]; delete m.b[f]; }
+      });
+      if(src){
+        if(!target.budget && src.budget) target.budget=src.budget;
+        S.cats=S.cats.filter(c=>c.id!==f);
+      }
+    });
+    ordre.push(st.id);
+  });
+  /* remettre dans l'ordre : structure d'abord, puis les catégories perso */
+  const dans=id=>ordre.indexOf(id);
+  S.cats.sort((x,y)=>{
+    const a=dans(x.id), b=dans(y.id);
+    if(a<0 && b<0) return 0;
+    if(a<0) return 1;
+    if(b<0) return -1;
+    return a-b;
+  });
+  S.structApplied=true;
+  save(); bust(); render();
+  toast('Catégories réorganisées', true);
+}
 
 /* ---------- annulation ---------- */
 let UNDO=[];
@@ -1397,6 +1581,8 @@ function undo(){
   if(!u){ toast('Rien à annuler'); return; }
   S=JSON.parse(u.s);
   if(!Array.isArray(S.debts)) S.debts=[];
+  S.cats.forEach(c=>{ if(!Array.isArray(c.subs)) c.subs=[]; });
+  if(SCAT===null && S.cats.length) SCAT=S.cats[0].id;
   /* les remboursements rattachés à une dépense se déduisent désormais de la dépense */
   S.debts.forEach(d=>{
     if(d.paid && d.tx && d.rev && d.rk && S.months[d.rk]){
@@ -1451,14 +1637,14 @@ function search(qRaw){
   const numOk=isFinite(num)&&/[0-9]/.test(qRaw);
   const out=[];
   S.tx.forEach(t=>{
-    const hay=[t.n,t.c].filter(Boolean);
+    const hay=[t.n,t.c,t.s,t.pm].filter(Boolean);
     const hit=hay.some(h=>norm(h).includes(q)) || (numOk && Math.abs(t.a-num)<0.005);
     if(hit) out.push({kind:'dep', id:t.id, k:t.d.slice(0,7), d:t.d,
-      titre:t.n||t.c, sous:t.n?t.c:(t.imp?"importé de l'Excel":''), a:netA(t), em:cat(t.c).em});
+      titre:t.n||t.c, sous:[t.n?t.c:(t.imp?"importé de l'Excel":''), t.s||''].filter(Boolean).join(' · '), a:netA(t), em:cat(t.c).em});
   });
   Object.keys(S.months).forEach(k=>{
     (S.months[k].rev||[]).forEach(r=>{
-      const hay=[r.l,r.n].filter(Boolean);
+      const hay=[r.l,r.n,r.pm].filter(Boolean);
       const hit=hay.some(h=>norm(h).includes(q)) || (numOk && Math.abs(r.a-num)<0.005);
       if(hit) out.push({kind:'rev', id:r.id, k, d:k+'-01', titre:r.l, sous:r.n||'', a:r.a, em:'💶'});
     });
@@ -1491,7 +1677,7 @@ function runSearch(){
 }
 function gotoResult(kind, id, k){
   el('dlgSearch').close();
-  CUR=k; TAB='tx'; FILTER=null; HILITE=id;
+  CUR=k; TAB='tx'; FILTER=null; FSUB=null; HILITE=id;
   render();
   requestAnimationFrame(()=>{
     const n=el('r-'+id);
@@ -1536,8 +1722,40 @@ function renderPicker(){
 }
 
 document.addEventListener('click', e=>{
-  const t=e.target.closest('[data-tab],[data-act],[data-filter],[data-deltx],[data-delrev],[data-goto],[data-hcat],[data-cdel],[data-c],[data-rmode],[data-jump],[data-catf],[data-kind],[data-rl],[data-res],[data-share],[data-pay],[data-unpay],[data-deldebt],[data-drm],[data-edittx],[data-editrev],[data-undo]');
+  const t=e.target.closest('[data-tab],[data-act],[data-filter],[data-deltx],[data-delrev],[data-goto],[data-hcat],[data-cdel],[data-c],[data-rmode],[data-jump],[data-catf],[data-kind],[data-rl],[data-res],[data-share],[data-pay],[data-unpay],[data-deldebt],[data-drm],[data-edittx],[data-editrev],[data-undo],[data-gtog],[data-ctog],[data-s],[data-pm],[data-subdel],[data-subadd],[data-scat],[data-subf]');
   if(!t) return;
+  if(t.dataset.gtog){ OPEN[t.dataset.gtog]=!OPEN[t.dataset.gtog]; renderDash(); return; }
+  if(t.dataset.ctog){ const k='c:'+t.dataset.ctog; OPEN[k]=!OPEN[k]; renderDash(); return; }
+  if(t.dataset.s!==undefined && t.closest('#txSubs')){
+    SUBSEL = (SUBSEL===t.dataset.s) ? '' : t.dataset.s;
+    el('txSubs').querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.s===SUBSEL)));
+    return;
+  }
+  if(t.dataset.pm!==undefined && t.closest('#txPay')){
+    PMSEL = (PMSEL===t.dataset.pm) ? '' : t.dataset.pm;
+    el('txPay').querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.pm===PMSEL)));
+    return;
+  }
+  if(t.dataset.subdel!==undefined){
+    const [ci,si]=t.dataset.subdel.split('\u0000');
+    const c=cat(ci); if(!c.subs) return;
+    const n=S.tx.filter(x=>x.c===ci && (x.s||'')===si).length;
+    if(n && !confirm(`« ${si} » contient ${n} dépense(s). Elles resteront dans « ${ci} » sans sous-catégorie. Continuer ?`)) return;
+    snap('suppression de sous-catégorie');
+    S.tx.forEach(x=>{ if(x.c===ci && (x.s||'')===si) x.s=''; });
+    c.subs=c.subs.filter(s=>s!==si);
+    save(); bust(); render(); toast('Sous-catégorie supprimée', true); return;
+  }
+  if(t.dataset.subadd!==undefined){
+    const c=cat(t.dataset.subadd);
+    const nom=prompt(`Nouvelle sous-catégorie pour « ${c.id} » :`);
+    if(!nom||!nom.trim()) return;
+    const v=nom.trim();
+    if(!c.subs) c.subs=[];
+    if(c.subs.includes(v)){ toast('Elle existe déjà'); return; }
+    snap('ajout de sous-catégorie');
+    c.subs.push(v); save(); bust(); render(); return;
+  }
   if(t.dataset.undo!==undefined){ undo(); return; }
   if(t.dataset.drm!==undefined){ DROWS.splice(+t.dataset.drm,1); if(SHARE!=='custom') applyShare(); else renderDebtRows(); return; }
   if(t.dataset.edittx){ openTx('dep', t.dataset.edittx); return; }
@@ -1555,13 +1773,13 @@ document.addEventListener('click', e=>{
     return;
   }
   if(t.dataset.catf){
-    TAB='tx'; FILTER=t.dataset.catf; render();
+    TAB='tx'; FILTER=t.dataset.catf; FSUB=(t.dataset.subf!==undefined?t.dataset.subf:null); render();
     requestAnimationFrame(()=>{ const n=el('cardDep'); if(n) n.scrollIntoView({behavior:'smooth',block:'start'}); });
     return;
   }
   if(t.dataset.jump!==undefined){
     const [tab,anchor]=t.dataset.jump.split(':');
-    TAB=tab; FILTER=null; render();
+    TAB=tab; FILTER=null; FSUB=null; render();
     requestAnimationFrame(()=>{
       const n=anchor && el(anchor);
       if(n) n.scrollIntoView({behavior:'smooth',block:'start'});
@@ -1570,13 +1788,20 @@ document.addEventListener('click', e=>{
     return;
   }
   if(t.dataset.rmode){ S.reportMode=t.dataset.rmode; save(); bust(); render(); return; }
-  if(t.dataset.tab){ TAB=t.dataset.tab; FILTER=null; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
+  if(t.dataset.tab){ TAB=t.dataset.tab; FILTER=null; FSUB=null; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
   if(t.dataset.c!==undefined && t.closest('#txCats')){
-    el('txCats').querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed', b===t));
+    el('txCats').querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed', String(b===t)));
+    SUBSEL=''; renderSubChips();
     return;
   }
-  if(t.dataset.filter!==undefined){ FILTER=t.dataset.filter||null; renderTx(); return; }
+  if(t.dataset.filter!==undefined){
+    const nf=t.dataset.filter||null;
+    const ns=t.dataset.subf!==undefined?t.dataset.subf:null;
+    if(nf===FILTER && ns===FSUB && ns!==null) FSUB=null; else { FILTER=nf; FSUB=nf?ns:null; }
+    renderTx(); return;
+  }
   if(t.dataset.hcat){ HCAT=t.dataset.hcat; renderHist(); return; }
+  if(t.dataset.scat){ SCAT=t.dataset.scat; renderSet(); return; }
   if(t.dataset.goto){ CUR=t.dataset.goto; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
   if(t.dataset.deltx){
     snap('suppression de dépense');
@@ -1597,6 +1822,8 @@ document.addEventListener('click', e=>{
   const a=t.dataset.act;
   if(a==='addtx'){ openTx('dep'); }
   else if(a==='addrev'){ openTx('rev'); }
+  else if(a==='struct'){ applyStructure(); }
+  else if(a==='nostruct'){ S.structApplied=true; save(); render(); }
   else if(a==='adddebt'){
     el('ndWho').value=''; el('ndAmt').value=''; el('ndNote').value='';
     el('ndDate').value=new Date().toISOString().slice(0,10);
@@ -1687,7 +1914,7 @@ el('frmTx').addEventListener('submit', e=>{
     if(EDIT && EDIT.kind==='dep'){
       snap('modification de dépense');
       const t=S.tx.find(x=>x.id===EDIT.id);
-      if(t){ t.a=r2(amt); t.c=sel.dataset.c; t.d=d; t.n=note; t.imp=0; }
+      if(t){ t.a=r2(amt); t.c=sel.dataset.c; t.s=SUBSEL||''; t.pm=PMSEL||''; t.d=d; t.n=note; t.imp=0; }
       S.debts=debts().filter(x=>!(x.tx===EDIT.id && !x.paid));
       rows.forEach(r=>debts().push({id:uid(), who:r.who, a:r.a, d, n:note, tx:EDIT.id, paid:false, pd:null, rev:null, rk:null}));
       ensureMonth(k); CUR=k; save();
@@ -1695,7 +1922,7 @@ el('frmTx').addEventListener('submit', e=>{
     } else {
       snap('ajout de dépense');
       const tid=uid();
-      S.tx.push({id:tid, d, c:sel.dataset.c, a:r2(amt), n:note, imp:0});
+      S.tx.push({id:tid, d, c:sel.dataset.c, s:SUBSEL||'', pm:PMSEL||'', a:r2(amt), n:note, imp:0});
       rows.forEach(r=>debts().push({id:uid(), who:r.who, a:r.a, d, n:note, tx:tid, paid:false, pd:null, rev:null, rk:null}));
       ensureMonth(k); CUR=k; save();
       const due=r2(rows.reduce((s,r)=>s+r.a,0));
@@ -1709,17 +1936,17 @@ el('frmTx').addEventListener('submit', e=>{
       const src=S.months[EDIT.k];
       const r=src && (src.rev||[]).find(x=>x.id===EDIT.id);
       if(r){
-        if(EDIT.k===k){ r.l=lbl; r.a=r2(amt); r.n=note; }
+        if(EDIT.k===k){ r.l=lbl; r.a=r2(amt); r.n=note; r.pm=PMSEL||''; }
         else {
           src.rev=src.rev.filter(x=>x.id!==EDIT.id);
-          ensureMonth(k).rev.push({id:EDIT.id, l:lbl, a:r2(amt), n:note});
+          ensureMonth(k).rev.push({id:EDIT.id, l:lbl, a:r2(amt), n:note, pm:PMSEL||''});
         }
       }
       CUR=k; save();
       setTimeout(()=>{render(); toast('Revenu modifié', true);},0);
     } else {
       snap('ajout de revenu');
-      ensureMonth(k).rev.push({id:uid(), l:lbl, a:r2(amt), n:note});
+      ensureMonth(k).rev.push({id:uid(), l:lbl, a:r2(amt), n:note, pm:PMSEL||''});
       CUR=k; save();
       setTimeout(()=>{render(); toast('+ '+fmt(amt)+' · '+lbl, true);},0);
     }
@@ -1808,6 +2035,8 @@ document.addEventListener('touchmove', e=>{ if(e.touches.length>1) e.preventDefa
   S=load();
   S.cats.forEach(c=>{ if(c.report===undefined) c.report=true; });
   if(!Array.isArray(S.debts)) S.debts=[];
+  S.cats.forEach(c=>{ if(!Array.isArray(c.subs)) c.subs=[]; });
+  if(SCAT===null && S.cats.length) SCAT=S.cats[0].id;
   /* les remboursements rattachés à une dépense se déduisent désormais de la dépense */
   S.debts.forEach(d=>{
     if(d.paid && d.tx && d.rev && d.rk && S.months[d.rk]){
