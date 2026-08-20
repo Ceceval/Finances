@@ -65,7 +65,8 @@ header.top{
 .icon-btn:hover{background:rgba(255,255,255,.24)}
 .hero{margin-top:20px;text-align:center}
 .hero .lbl{font-size:12.5px;text-transform:uppercase;letter-spacing:.09em;opacity:.72;font-weight:600}
-.hero .amount{font-size:clamp(40px,10vw,58px);font-weight:700;letter-spacing:-.03em;line-height:1.05;margin:4px 0 0;
+.hero .amountline{margin:4px 0 0;display:block;width:100%}
+.hero .amount{font-size:clamp(40px,10vw,58px);font-weight:700;letter-spacing:-.03em;line-height:1.05;
   color:#fff;display:inline-flex;align-items:center;gap:10px;padding:2px 10px;border-radius:14px;transition:background .15s}
 .hero .amount:hover{background:rgba(255,255,255,.13)}
 .hero .amount .pen{opacity:.5;flex:none}
@@ -179,6 +180,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0
 .btn.sm{padding:7px 12px;font-size:13px}
 .btn.block{width:100%}
 .chips{display:flex;flex-wrap:wrap;gap:7px}
+.drow{display:grid;grid-template-columns:minmax(0,1fr) 92px 30px;gap:6px;align-items:center;margin-bottom:7px}
+.drow input{padding:9px 10px}
+.drow .del{opacity:.55;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--text-3)}
+.drow .del:hover{background:var(--surface-3);color:var(--crit)}
 .chip{padding:8px 13px;border-radius:99px;border:1.5px solid var(--border-strong);font-size:13.5px;font-weight:600;color:var(--text-2);display:inline-flex;align-items:center;gap:6px;transition:.15s;background:var(--surface)}
 .chip:hover{border-color:var(--brand);color:var(--text)}
 .chip[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff}
@@ -194,6 +199,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0
 .daygroup:first-child{margin-top:0}
 .dayhead{display:flex;justify-content:space-between;font-size:12px;font-weight:650;color:var(--text-3);text-transform:capitalize;padding-bottom:6px;border-bottom:1px solid var(--border)}
 .tx{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--border)}
+.tx[data-edittx],.tx[data-editrev]{cursor:pointer;border-radius:10px;transition:background .15s}
+.tx[data-edittx]:hover,.tx[data-editrev]:hover{background:var(--surface-2)}
 .tx:last-child{border-bottom:none}
 .tx .ico{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:16px;flex:none;background:var(--surface-3)}
 .tx .m{flex:1;min-width:0}
@@ -290,7 +297,10 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
 .dlg-actions .btn{flex:1}
 .hint{font-size:12px;color:var(--text-3);margin-top:6px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-.toast{position:fixed;left:50%;transform:translate(-50%,20px);bottom:calc(26px + env(safe-area-inset-bottom, 0px));background:var(--text);color:var(--surface);padding:11px 18px;border-radius:99px;font-size:13.5px;font-weight:600;z-index:99;opacity:0;transition:.25s;pointer-events:none}
+.toast{position:fixed;left:50%;transform:translate(-50%,20px);bottom:calc(26px + env(safe-area-inset-bottom, 0px));background:var(--text);color:var(--surface);padding:10px 12px 10px 18px;border-radius:99px;font-size:13.5px;font-weight:600;z-index:99;opacity:0;transition:.25s;pointer-events:none;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 32px)}
+.toast.act{pointer-events:auto}
+.toast button{color:var(--brand);background:rgba(255,255,255,.12);padding:5px 12px;border-radius:99px;font-weight:700;font-size:13px;flex:none}
+:root[data-theme="dark"] .toast button{color:var(--brand-ink)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .catedit{display:grid;grid-template-columns:auto 1fr 96px auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
 .ce{grid-template-columns:46px minmax(0,1fr) 152px 92px auto;align-items:center;grid-template-areas:"em nm gr bd ac";column-gap:8px}
@@ -336,7 +346,7 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
     </div>
     <div class="hero">
       <div class="lbl">Solde au <span id="heroDate">—</span></div>
-      <button class="amount" id="heroAmount" aria-label="Corriger le solde"><span class="tnum" id="heroVal">—</span><svg class="pen" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+      <div class="amountline"><button class="amount" id="heroAmount" aria-label="Corriger le solde"><span class="tnum" id="heroVal">—</span><svg class="pen" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button></div>
       <div class="delta" id="heroDelta"></div>
       <div class="monthnav">
         <button id="prevM" aria-label="Mois précédent"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
@@ -394,14 +404,15 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
         Quelqu'un me doit une partie
       </label>
       <div id="debtFields" hidden style="margin-top:10px">
-        <input id="debtWho" type="text" placeholder="Qui ? (ex. Céline)" list="whoList" aria-label="Qui me doit">
-        <datalist id="whoList"></datalist>
-        <div class="chips" style="margin:9px 0">
-          <button type="button" class="chip" data-share="half">Moitié</button>
-          <button type="button" class="chip" data-share="all">Tout</button>
-          <button type="button" class="chip" data-share="custom">Montant précis</button>
+        <div id="debtList"></div>
+        <button type="button" class="btn sm" id="debtAdd" style="margin-top:2px">+ Ajouter une personne</button>
+        <div class="chips" id="debtModes" style="margin:10px 0 8px">
+          <button type="button" class="chip" data-share="equal">À parts égales</button>
+          <button type="button" class="chip" data-share="all">Ils paient tout</button>
+          <button type="button" class="chip" data-share="custom">Montants libres</button>
         </div>
-        <input id="debtAmt" type="text" inputmode="decimal" autocomplete="off" placeholder="Montant dû" aria-label="Montant dû">
+        <p class="hint" id="debtLeft" style="margin-top:0"></p>
+        <datalist id="whoList"></datalist>
       </div>
     </div>
     <div class="row2" id="rowDate">
@@ -470,7 +481,7 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
   <div class="dlg-actions"><button type="button" class="btn" id="mCancel">Fermer</button></div>
 </div></dialog>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast"><span id="toastMsg"></span></div>
 <script>
 /* ===================== DONNÉES INITIALES (import Excel) ===================== */
 const SEED={"solde0":0,"m":[]};
@@ -555,7 +566,19 @@ function cat(id){ return S.cats.find(c=>c.id===id) || {id, em:'•', grp:'l', bu
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function el(id){ return document.getElementById(id); }
 let toastT;
-function toast(msg){ const t=el('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),2400); }
+function toast(msg, undoable){
+  const t=el('toast');
+  el('toastMsg').textContent=msg;
+  const old=t.querySelector('button'); if(old) old.remove();
+  if(undoable){
+    const b=document.createElement('button');
+    b.type='button'; b.textContent='Annuler'; b.setAttribute('data-undo','');
+    t.appendChild(b); t.classList.add('act');
+  } else t.classList.remove('act');
+  t.classList.add('on');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>{t.classList.remove('on');t.classList.remove('act');}, undoable?6000:2400);
+}
 
 /* ===================== CALCULS ===================== */
 let CACHE = {};
@@ -953,7 +976,7 @@ function renderTx(){
   const revs=(S.months[CUR]?.rev)||[];
   if(revs.length){
     revs.forEach(r=>{
-      html+=`<div class="tx${HILITE===r.id?' hl':''}" id="r-${r.id}"><div class="ico">💶</div><div class="m"><div class="n">${esc(r.l)}</div>${r.n?`<div class="c">${esc(r.n)}</div>`:''}</div><div class="a tnum" style="color:var(--brand)">${sgn(r.a)}</div>
+      html+=`<div class="tx${HILITE===r.id?' hl':''}" id="r-${r.id}" data-editrev="${r.id}"><div class="ico">💶</div><div class="m"><div class="n">${esc(r.l)}</div>${r.n?`<div class="c">${esc(r.n)}</div>`:''}</div><div class="a tnum" style="color:var(--brand)">${sgn(r.a)}</div>
       <button class="del" data-delrev="${r.id}" aria-label="Supprimer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>`;
     });
   } else html+='<div class="empty">Aucun revenu enregistré ce mois-ci.</div>';
@@ -986,7 +1009,7 @@ function renderTx(){
         html+=`<div class="daygroup"><div class="dayhead"><span>${t.imp?'Import Excel · '+mLabel(CUR,true):dLabel(t.d)}</span><span class="tnum">${fmt(dayTot)}</span></div>`;
       }
       const c=cat(t.c);
-      html+=`<div class="tx${HILITE===t.id?' hl':''}" id="r-${t.id}">
+      html+=`<div class="tx${HILITE===t.id?' hl':''}" id="r-${t.id}" data-edittx="${t.id}">
         <div class="ico">${c.em}</div>
         <div class="m"><div class="n">${esc(t.n||t.c)}</div><div class="c" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">${t.n?esc(t.c):(t.imp?"importé de l'Excel":'')}${oweOf(t.id)?`<span class="owe">${nfNum.format(oweOf(t.id))} € dû</span>`:''}</div></div>
         <div class="a tnum">${fmt(t.a)}</div>
@@ -1191,6 +1214,7 @@ function renderSet(){
       <button class="btn primary" data-act="export">Exporter mes données</button>
       <button class="btn" data-act="import">Importer un fichier</button>
       <button class="btn" data-act="csv">Exporter en CSV</button>
+      <button class="btn" data-undo="">Annuler la dernière action</button>
       <button class="btn danger" data-act="reset">Tout effacer</button>
     </div>
     <input type="file" id="fileIn" accept=".json,application/json,text/plain" hidden>
@@ -1219,7 +1243,7 @@ function render(){
 
 /* ===================== ÉVÉNEMENTS ===================== */
 const REV_PRESETS=['Salaire','Chèques repas','Prime','Remboursement','Autre'];
-let KIND='dep';
+let KIND='dep', EDIT=null;
 function setKind(k){
   KIND=k;
   document.querySelectorAll('[data-kind]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.kind===k)));
@@ -1227,39 +1251,111 @@ function setKind(k){
   el('wrapRev').hidden  = k!=='rev';
   el('wrapNote').hidden = false;
   el('wrapDebt').hidden = k!=='dep';
-  el('txTitle').textContent = k==='dep' ? 'Nouvelle dépense' : 'Nouveau revenu';
+  if(!EDIT) el('txTitle').textContent = k==='dep' ? 'Nouvelle dépense' : 'Nouveau revenu';
 }
-let SHARE='half';
-function syncDebtAmt(){
-  if(!el('debtOn').checked || SHARE==='custom') return;
-  const a=numFR(el('txAmount').value);
-  if(!isFinite(a)) { el('debtAmt').value=''; return; }
-  el('debtAmt').value = (SHARE==='all'? r2(a) : r2(a/2)).toFixed(2);
+let SHARE='equal', DROWS=[];
+function renderDebtRows(){
+  el('debtList').innerHTML = DROWS.map((r,i)=>`
+    <div class="drow">
+      <input type="text" data-dw="${i}" value="${esc(r.who)}" placeholder="Qui ?" list="whoList" aria-label="Personne ${i+1}">
+      <input type="text" inputmode="decimal" autocomplete="off" data-da="${i}" value="${esc(r.a)}" placeholder="0,00" style="text-align:right" aria-label="Montant dû ${i+1}">
+      <button type="button" class="del" data-drm="${i}" aria-label="Retirer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+    </div>`).join('');
+  updateLeft();
+}
+function debtSum(){ return r2(DROWS.reduce((s,r)=>{const v=numFR(r.a); return s+(isFinite(v)?v:0);},0)); }
+function updateLeft(){
+  const tot=numFR(el('txAmount').value);
+  const due=debtSum();
+  if(!isFinite(tot)||tot<=0){ el('debtLeft').textContent=''; return; }
+  const mine=r2(tot-due);
+  el('debtLeft').innerHTML = mine<0
+    ? `<span style="color:var(--crit);font-weight:650">Le total dû (${fmt(due)}) dépasse la dépense de ${fmt(-mine)}.</span>`
+    : `On te doit <b>${fmt(due)}</b> · il te reste <b>${fmt(mine)}</b> à ta charge.`;
+}
+function applyShare(){
+  const tot=numFR(el('txAmount').value);
+  if(!isFinite(tot)||tot<=0||!DROWS.length||SHARE==='custom'){ updateLeft(); return; }
+  const per = SHARE==='equal' ? r2(tot/(DROWS.length+1)) : r2(tot/DROWS.length);
+  DROWS.forEach(r=>r.a=per.toFixed(2).replace('.',','));
+  renderDebtRows();
 }
 function setShare(s){
   SHARE=s;
   document.querySelectorAll('[data-share]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.share===s)));
-  if(s==='custom'){ el('debtAmt').focus(); el('debtAmt').select(); } else syncDebtAmt();
+  if(s==='custom') updateLeft(); else applyShare();
+}
+function addDebtRow(who,a){
+  DROWS.push({who:who||'', a:a==null?'':String(a)});
+  if(who==null && a==null && SHARE!=='custom') applyShare(); else renderDebtRows();
+  const inputs=el('debtList').querySelectorAll('[data-dw]');
+  const last=inputs[inputs.length-1]; if(last && !who) last.focus();
 }
 function toggleDebt(){
   const on=el('debtOn').checked;
   el('debtFields').hidden=!on;
-  if(on){ setShare('half'); setTimeout(()=>el('debtWho').focus(),40); }
+  if(on && !DROWS.length) addDebtRow();
+  else updateLeft();
 }
-function openTx(kind){
+function openTx(kind, editId){
+  EDIT=null;
   el('txAmount').value=''; el('txNote').value=''; el('revLbl2').value='';
-  el('debtOn').checked=false; el('debtFields').hidden=true; el('debtWho').value=''; el('debtAmt').value=''; SHARE='half';
-  document.querySelectorAll('[data-share]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.share==='half')));
-  el('whoList').innerHTML=people().map(w=>`<option value="${esc(w)}">`).join('');
+  el('debtOn').checked=false; el('debtFields').hidden=true; DROWS=[]; SHARE='equal';
+  el('debtList').innerHTML=''; el('debtLeft').textContent='';
   const today=new Date(), tk=mKey(today);
   el('txDate').value = (CUR===tk) ? today.toISOString().slice(0,10) : CUR+'-15';
   el('txCats').innerHTML=S.cats.map((c,i)=>`<button type="button" class="chip" data-c="${esc(c.id)}" aria-pressed="${i===0}">${c.em} ${esc(c.id)}</button>`).join('');
   el('revChips').innerHTML=REV_PRESETS.map(l=>`<button type="button" class="chip" data-rl="${esc(l)}">${esc(l)}</button>`).join('');
-  setKind(kind||'dep');
+  el('whoList').innerHTML=people().map(w=>`<option value="${esc(w)}">`).join('');
+  document.querySelectorAll('[data-share]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.share==='equal')));
+
+  if(editId && kind==='dep'){
+    const t=S.tx.find(x=>x.id===editId);
+    if(t){
+      EDIT={kind:'dep', id:t.id};
+      el('txAmount').value=String(t.a).replace('.',',');
+      el('txDate').value=t.d; el('txNote').value=t.n||'';
+      el('txCats').querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.c===t.c)));
+      const ds=debts().filter(d=>d.tx===t.id && !d.paid);
+      if(ds.length){
+        DROWS=ds.map(d=>({who:d.who, a:String(d.a).replace('.',',')}));
+        SHARE='custom';
+        document.querySelectorAll('[data-share]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.share==='custom')));
+        el('debtOn').checked=true; el('debtFields').hidden=false; renderDebtRows();
+      }
+    }
+  } else if(editId && kind==='rev'){
+    let found=null, fk=null;
+    Object.keys(S.months).forEach(k=>{ const r=(S.months[k].rev||[]).find(x=>x.id===editId); if(r){found=r;fk=k;} });
+    if(found){
+      EDIT={kind:'rev', id:found.id, k:fk};
+      el('txAmount').value=String(found.a).replace('.',',');
+      el('revLbl2').value=found.l||''; el('txNote').value=found.n||'';
+      el('txDate').value=fk+'-15';
+    }
+  }
+  setKind(EDIT ? EDIT.kind : (kind||'dep'));
+  el('txTitle').textContent = EDIT
+    ? (EDIT.kind==='dep' ? 'Modifier la dépense' : 'Modifier le revenu')
+    : (KIND==='dep' ? 'Nouvelle dépense' : 'Nouveau revenu');
+  el('txSubmit').textContent = EDIT ? 'Enregistrer' : 'Ajouter';
   el('dlgTx').showModal();
   setTimeout(()=>el('txAmount').focus(),50);
 }
 function ensureMonth(k){ if(!S.months[k]) S.months[k]={rev:[],adj:0,b:{}}; return S.months[k]; }
+
+/* ---------- annulation ---------- */
+let UNDO=[];
+function snap(label){
+  try{ UNDO.push({s:JSON.stringify(S), l:label}); if(UNDO.length>25) UNDO.shift(); }catch(e){}
+}
+function undo(){
+  const u=UNDO.pop();
+  if(!u){ toast('Rien à annuler'); return; }
+  S=JSON.parse(u.s);
+  if(!Array.isArray(S.debts)) S.debts=[];
+  save(); bust(); render(); toast('Annulé : '+u.l);
+}
 
 /* ---------- créances ---------- */
 function debts(){ if(!S.debts) S.debts=[]; return S.debts; }
@@ -1269,6 +1365,7 @@ function people(){ return [...new Set(debts().map(d=>d.who))].sort((a,b)=>a.loca
 function initials(n){ return (n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?'; }
 function payDebt(id){
   const d=debts().find(x=>x.id===id); if(!d||d.paid) return;
+  snap('remboursement');
   const tk=mKey(new Date());
   const k = allMonths().indexOf(tk)>=0 ? tk : CUR;
   const r={id:uid(), l:'Remboursement — '+d.who, a:d.a, n:d.n||''};
@@ -1278,6 +1375,7 @@ function payDebt(id){
 }
 function unpayDebt(id){
   const d=debts().find(x=>x.id===id); if(!d||!d.paid) return;
+  snap('annulation de remboursement');
   if(d.rev && d.rk && S.months[d.rk]) S.months[d.rk].rev=S.months[d.rk].rev.filter(r=>r.id!==d.rev);
   d.paid=false; d.pd=null; d.rev=null; d.rk=null;
   save(); bust(); render(); toast('Remboursement annulé');
@@ -1381,12 +1479,16 @@ function renderPicker(){
 }
 
 document.addEventListener('click', e=>{
-  const t=e.target.closest('[data-tab],[data-act],[data-filter],[data-deltx],[data-delrev],[data-goto],[data-hcat],[data-cdel],[data-c],[data-rmode],[data-jump],[data-catf],[data-kind],[data-rl],[data-res],[data-share],[data-pay],[data-unpay],[data-deldebt]');
+  const t=e.target.closest('[data-tab],[data-act],[data-filter],[data-deltx],[data-delrev],[data-goto],[data-hcat],[data-cdel],[data-c],[data-rmode],[data-jump],[data-catf],[data-kind],[data-rl],[data-res],[data-share],[data-pay],[data-unpay],[data-deldebt],[data-drm],[data-edittx],[data-editrev],[data-undo]');
   if(!t) return;
+  if(t.dataset.undo!==undefined){ undo(); return; }
+  if(t.dataset.drm!==undefined){ DROWS.splice(+t.dataset.drm,1); if(SHARE!=='custom') applyShare(); else renderDebtRows(); return; }
+  if(t.dataset.edittx){ openTx('dep', t.dataset.edittx); return; }
+  if(t.dataset.editrev){ openTx('rev', t.dataset.editrev); return; }
   if(t.dataset.share){ setShare(t.dataset.share); return; }
   if(t.dataset.pay){ payDebt(t.dataset.pay); return; }
   if(t.dataset.unpay){ unpayDebt(t.dataset.unpay); return; }
-  if(t.dataset.deldebt){ S.debts=debts().filter(d=>d.id!==t.dataset.deldebt); save(); bust(); render(); toast('Ligne supprimée'); return; }
+  if(t.dataset.deldebt){ snap('suppression d\'une créance'); S.debts=debts().filter(d=>d.id!==t.dataset.deldebt); save(); bust(); render(); toast('Ligne supprimée', true); return; }
   if(t.dataset.res){ const [kd,id,k]=t.dataset.res.split(':'); gotoResult(kd,id,k); return; }
   if(t.dataset.kind){ setKind(t.dataset.kind); return; }
   if(t.dataset.rl){
@@ -1420,11 +1522,12 @@ document.addEventListener('click', e=>{
   if(t.dataset.hcat){ HCAT=t.dataset.hcat; renderHist(); return; }
   if(t.dataset.goto){ CUR=t.dataset.goto; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
   if(t.dataset.deltx){
+    snap('suppression de dépense');
     S.tx=S.tx.filter(x=>x.id!==t.dataset.deltx);
     debts().filter(d=>d.tx===t.dataset.deltx && d.paid).forEach(d=>unpayDebt(d.id));
     S.debts=debts().filter(d=>d.tx!==t.dataset.deltx);
-    save(); render(); toast('Dépense supprimée'); return; }
-  if(t.dataset.delrev){ const M=S.months[CUR]; if(M){M.rev=M.rev.filter(r=>r.id!==t.dataset.delrev);} save(); render(); toast('Revenu supprimé'); return; }
+    save(); render(); toast('Dépense supprimée', true); return; }
+  if(t.dataset.delrev){ snap('suppression de revenu'); const M=S.months[CUR]; if(M){M.rev=M.rev.filter(r=>r.id!==t.dataset.delrev);} save(); render(); toast('Revenu supprimé', true); return; }
   if(t.dataset.cdel){
     const id=t.dataset.cdel;
     const n=S.tx.filter(x=>x.c===id).length;
@@ -1514,27 +1617,55 @@ el('frmTx').addEventListener('submit', e=>{
   if(!isFinite(amt)||amt===0){ e.preventDefault(); toast('Indique un montant'); return; }
   const d=el('txDate').value || (CUR+'-15');
   const k=d.slice(0,7);
+
   if(KIND==='dep'){
     const sel=el('txCats').querySelector('[aria-pressed="true"]');
     if(!sel){ e.preventDefault(); toast('Choisis une catégorie'); return; }
-    const tid=uid();
-    S.tx.push({id:tid, d, c:sel.dataset.c, a:r2(amt), n:el('txNote').value.trim(), imp:0});
-    let due=0;
-    if(el('debtOn').checked){
-      const who=el('debtWho').value.trim();
-      const da=numFR(el('debtAmt').value);
-      if(who && isFinite(da) && da>0){
-        due=r2(Math.min(da, r2(amt)));
-        debts().push({id:uid(), who, a:due, d, n:el('txNote').value.trim(), tx:tid, paid:false, pd:null, rev:null, rk:null});
-      }
+    const rows = el('debtOn').checked
+      ? DROWS.map(r=>({who:r.who.trim(), a:r2(numFR(r.a))}))
+             .filter(r=>r.who && isFinite(r.a) && r.a>0)
+      : [];
+    const note=el('txNote').value.trim();
+
+    if(EDIT && EDIT.kind==='dep'){
+      snap('modification de dépense');
+      const t=S.tx.find(x=>x.id===EDIT.id);
+      if(t){ t.a=r2(amt); t.c=sel.dataset.c; t.d=d; t.n=note; t.imp=0; }
+      S.debts=debts().filter(x=>!(x.tx===EDIT.id && !x.paid));
+      rows.forEach(r=>debts().push({id:uid(), who:r.who, a:r.a, d, n:note, tx:EDIT.id, paid:false, pd:null, rev:null, rk:null}));
+      ensureMonth(k); CUR=k; save();
+      setTimeout(()=>{render(); toast('Dépense modifiée', true);},0);
+    } else {
+      snap('ajout de dépense');
+      const tid=uid();
+      S.tx.push({id:tid, d, c:sel.dataset.c, a:r2(amt), n:note, imp:0});
+      rows.forEach(r=>debts().push({id:uid(), who:r.who, a:r.a, d, n:note, tx:tid, paid:false, pd:null, rev:null, rk:null}));
+      ensureMonth(k); CUR=k; save();
+      const due=r2(rows.reduce((s,r)=>s+r.a,0));
+      setTimeout(()=>{render(); toast('− '+fmt(amt)+' · '+sel.dataset.c+(due?` · ${fmt(due)} dû`:''), true);},0);
     }
-    ensureMonth(k); CUR=k; save();
-    setTimeout(()=>{render(); toast('− '+fmt(amt)+' · '+sel.dataset.c+(due?` · ${fmt(due)} dû`:''));},0);
   } else {
     const lbl=el('revLbl2').value.trim() || 'Revenu';
-    ensureMonth(k).rev.push({id:uid(), l:lbl, a:r2(amt), n:el('txNote').value.trim()});
-    CUR=k; save();
-    setTimeout(()=>{render(); toast('+ '+fmt(amt)+' · '+lbl);},0);
+    const note=el('txNote').value.trim();
+    if(EDIT && EDIT.kind==='rev'){
+      snap('modification de revenu');
+      const src=S.months[EDIT.k];
+      const r=src && (src.rev||[]).find(x=>x.id===EDIT.id);
+      if(r){
+        if(EDIT.k===k){ r.l=lbl; r.a=r2(amt); r.n=note; }
+        else {
+          src.rev=src.rev.filter(x=>x.id!==EDIT.id);
+          ensureMonth(k).rev.push({id:EDIT.id, l:lbl, a:r2(amt), n:note});
+        }
+      }
+      CUR=k; save();
+      setTimeout(()=>{render(); toast('Revenu modifié', true);},0);
+    } else {
+      snap('ajout de revenu');
+      ensureMonth(k).rev.push({id:uid(), l:lbl, a:r2(amt), n:note});
+      CUR=k; save();
+      setTimeout(()=>{render(); toast('+ '+fmt(amt)+' · '+lbl, true);},0);
+    }
   }
 });
 el('txCancel').addEventListener('click',()=>el('dlgTx').close());
@@ -1548,17 +1679,29 @@ el('soldeCancel').addEventListener('click',()=>el('dlgSolde').close());
 el('frmSolde').addEventListener('submit', e=>{
   const v=numFR(el('soldeVal').value);
   if(!isFinite(v)){ e.preventDefault(); return; }
+  snap('correction du solde');
   const M=ensureMonth(CUR);
   M.adj = r2((M.adj||0) + (v - soldes()[CUR].fin));
   save(); bust();
   setTimeout(()=>{render(); toast('Solde corrigé');},0);
 });
 el('debtOn').addEventListener('change',toggleDebt);
-el('txAmount').addEventListener('input',syncDebtAmt);
+el('debtAdd').addEventListener('click',()=>addDebtRow());
+el('txAmount').addEventListener('input',()=>{ if(el('debtOn').checked) applyShare(); });
+el('debtList').addEventListener('input', e=>{
+  const t=e.target;
+  if(t.dataset.dw!==undefined){ DROWS[+t.dataset.dw].who=t.value; }
+  else if(t.dataset.da!==undefined){
+    DROWS[+t.dataset.da].a=t.value;
+    if(SHARE!=='custom'){ SHARE='custom'; document.querySelectorAll('[data-share]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.share==='custom'))); }
+    updateLeft();
+  }
+});
 el('ndCancel').addEventListener('click',()=>el('dlgDebt').close());
 el('frmDebt').addEventListener('submit', e=>{
   const who=el('ndWho').value.trim(), a=numFR(el('ndAmt').value);
   if(!who||!isFinite(a)||a<=0){ e.preventDefault(); return; }
+  snap('ajout d\'une créance');
   debts().push({id:uid(), who, a:r2(a), d:el('ndDate').value||new Date().toISOString().slice(0,10),
                 n:el('ndNote').value.trim(), tx:null, paid:false, pd:null, rev:null, rk:null});
   save(); bust(); setTimeout(()=>{render(); toast(who+' te doit '+fmt(a));},0);
