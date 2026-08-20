@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mes finances</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Mes finances">
+<meta name="theme-color" content="#0f5334">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
 <style>
 :root{
   color-scheme: light;
@@ -36,14 +43,15 @@ body{
   background:var(--bg); color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif;
   font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased;
-  padding-bottom:96px;
+  padding-bottom:calc(96px + env(safe-area-inset-bottom, 0px));
+  overscroll-behavior-y:contain;
 }
 button,input,select,textarea{font:inherit;color:inherit}
-button{cursor:pointer;border:none;background:none}
+button{cursor:pointer;border:none;background:none;-webkit-user-select:none;user-select:none}
 .tnum{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 
 /* ---------- layout ---------- */
-.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 max(16px, env(safe-area-inset-left, 0px)) 0 max(16px, env(safe-area-inset-right, 0px))}
 header.top{
   background:linear-gradient(165deg,#0f5334 0%,#1b7f4f 60%,#25a468 100%);
   color:#fff; padding:14px 0 84px; position:relative;
@@ -196,7 +204,7 @@ svg.chart .axlabel{font-size:10px}
 .seg{display:inline-flex;background:var(--surface-3);border-radius:10px;padding:3px;gap:2px}
 .seg button{padding:6px 12px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--text-2)}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.07)}
-.fab{position:fixed;right:max(16px,calc(50vw - 544px));bottom:22px;z-index:50;height:54px;padding:0 22px;border-radius:99px;background:var(--brand);color:#fff;font-weight:650;font-size:15px;display:flex;align-items:center;gap:9px;box-shadow:0 8px 28px -6px rgba(27,127,79,.55)}
+.fab{position:fixed;right:max(16px,calc(50vw - 544px));bottom:calc(22px + env(safe-area-inset-bottom, 0px));z-index:50;height:54px;padding:0 22px;border-radius:99px;background:var(--brand);color:#fff;font-weight:650;font-size:15px;display:flex;align-items:center;gap:9px;box-shadow:0 8px 28px -6px rgba(27,127,79,.55)}
 .fab:hover{background:var(--brand-2)}
 dialog{border:none;padding:0;border-radius:18px;background:var(--surface);color:var(--text);box-shadow:var(--shadow-lg);max-width:440px;width:calc(100% - 28px)}
 dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
@@ -206,7 +214,7 @@ dialog::backdrop{background:rgba(10,20,14,.5);backdrop-filter:blur(3px)}
 .dlg-actions .btn{flex:1}
 .hint{font-size:12px;color:var(--text-3);margin-top:6px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-.toast{position:fixed;left:50%;transform:translate(-50%,20px);bottom:26px;background:var(--text);color:var(--surface);padding:11px 18px;border-radius:99px;font-size:13.5px;font-weight:600;z-index:99;opacity:0;transition:.25s;pointer-events:none}
+.toast{position:fixed;left:50%;transform:translate(-50%,20px);bottom:calc(26px + env(safe-area-inset-bottom, 0px));background:var(--text);color:var(--surface);padding:11px 18px;border-radius:99px;font-size:13.5px;font-weight:600;z-index:99;opacity:0;transition:.25s;pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 .catedit{display:grid;grid-template-columns:auto 1fr 96px auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
 .catedit:last-of-type{border-bottom:none}
