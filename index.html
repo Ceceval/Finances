@@ -138,6 +138,13 @@ main{padding-top:18px}
 .tile .v{font-size:25px;font-weight:700;letter-spacing:-.02em;margin-top:5px;line-height:1.1}
 .tile .h{font-size:12px;color:var(--text-3);margin-top:2px}
 .tile-btn{text-align:left;width:100%;cursor:pointer;transition:border-color .15s, transform .15s, box-shadow .15s}
+.tile-wrap{padding:0;overflow:hidden}
+.tilehead{display:block;width:100%;text-align:left;cursor:pointer;padding:14px 15px;transition:background .15s}
+.tilehead:hover{background:var(--surface-2)}
+.tile-wrap.open .tilehead{background:var(--surface-2)}
+.tile-wrap.open .tchev{transform:rotate(90deg)}
+.tilebody{padding:2px 15px 15px;border-top:1px solid var(--border)}
+@media(min-width:621px){.tiles .tile-full{grid-column:1 / -1}}
 .tile-btn:hover{border-color:var(--brand);transform:translateY(-1px);box-shadow:var(--shadow-lg)}
 .tile-btn:active{transform:translateY(0)}
 .tchev{margin-left:auto;opacity:.45;flex:none}
@@ -170,7 +177,7 @@ main{padding-top:18px}
 .ghead:hover{background:var(--surface-2)}
 .gchev{flex:none;color:var(--text-3);transition:transform .2s}
 .gcard.open .gchev,.brow-btn.open .brow-chev{transform:rotate(90deg)}
-.subs{padding:2px 0 6px 30px;margin-top:-2px}
+.subs{padding:2px 0 6px 16px;margin-top:-2px}
 .srow{display:flex;align-items:center;gap:9px;width:100%;padding:8px 8px 8px 0;border-radius:9px;text-align:left;cursor:pointer;transition:background .15s;position:relative}
 .srow:hover{background:var(--surface-2)}
 .srow::before{content:'';position:absolute;left:-14px;top:0;bottom:0;width:2px;background:var(--border);border-radius:2px}
@@ -182,10 +189,7 @@ main{padding-top:18px}
 .srow.all .sn{color:var(--text-3);font-weight:600}
 .schev{transition:transform .2s}
 .srow.open .schev{transform:rotate(90deg)}
-.subtx{padding:0 0 6px 4px;margin-bottom:2px}
-.subtx .tx{padding:8px 0}
-.subtx .tx .ico{width:30px;height:30px;border-radius:9px;font-size:14px}
-.subtx .tx .n{font-size:13.5px}
+.subtx{padding:0 0 6px 0;margin-bottom:2px}
 .tchev{transition:transform .2s}
 .tile-btn.open .tchev{transform:rotate(90deg)}
 .bhead{display:grid;grid-template-columns:34px minmax(0,1fr) 84px 66px 48px;gap:5px;align-items:center;
@@ -302,6 +306,11 @@ body.selmode .fab{opacity:0;pointer-events:none}
 .tx .ico{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:16px;flex:none;background:var(--surface-3)}
 .tx .m{flex:1;min-width:0}
 .tx .m .n{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.txinline .tx{padding:8px 0;gap:9px}
+.txinline .tx .ico{width:28px;height:28px;border-radius:9px;font-size:14px}
+.txinline .tx .m .n{font-size:13.5px;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3}
+.txinline .tx .m .c{white-space:normal}
+.txinline .tx .a{font-size:14px}
 .tx .m .c{font-size:12px;color:var(--text-3)}
 .tx .a{font-weight:650;font-size:15px;white-space:nowrap}
 .tx .del{opacity:0;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--text-3);flex:none;transition:.15s}
@@ -339,6 +348,10 @@ body.selmode .fab{opacity:0;pointer-events:none}
 @keyframes flash{0%,55%{background:var(--brand-soft);box-shadow:0 0 0 8px var(--brand-soft)}100%{background:transparent;box-shadow:0 0 0 8px transparent}}
 .sres{display:flex;align-items:center;gap:11px;padding:10px 8px;width:calc(100% + 16px);margin-left:-8px;border-radius:11px;text-align:left;cursor:pointer;transition:background .15s}
 .sres:hover{background:var(--surface-2)}
+.sres{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.sres.sel{background:var(--brand-soft)}
+.sres.sel .ico{background:var(--brand);color:#fff}
+.sres.sel .m .n{color:var(--brand-ink)}
 .sres .ico{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:16px;flex:none;background:var(--surface-3)}
 .sres .m{flex:1;min-width:0}
 .sres .m .n{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1015,11 +1028,8 @@ function renderHero(){
 /* ---------- Tableau de bord ---------- */
 const CHEV_S='<svg class="brow-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
 function renderDash(){
-  const a=agg(CUR), R=restes()[CUR], prog=monthProgress(CUR);
+  const a=agg(CUR), R=restes()[CUR];
   const so=soldes();
-  let totB=0, totD=0;
-  S.cats.forEach(c=>{ totB+=Math.max(0,R[c.id].dispo); totD+=R[c.id].dep; });
-  totB=r2(totB); totD=r2(totD);
   const hors = r2(a.dep - S.cats.reduce((s,c)=>s+R[c.id].dep,0));
 
   let html='';
@@ -1055,35 +1065,20 @@ function renderDash(){
 
   const CHEV='<svg class="tchev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
   html+=`<div class="tiles">
-    <button class="tile tile-btn${OPEN.rev?' open':''}" data-revtog=""><div class="t"><span class="dot" style="background:var(--s1)"></span>Revenus${CHEV}</div><div class="v tnum">${fmt(a.rev)}</div><div class="h">${(S.months[CUR]?.rev||[]).length} entrée(s) — ${OPEN.rev?'masquer':'voir'} le détail</div></button>
+    <div class="tile tile-wrap${OPEN.rev?' open tile-full':''}" id="cardRevDash">
+      <button class="tilehead" data-revtog="">
+        <div class="t"><span class="dot" style="background:var(--s1)"></span>Revenus${CHEV}</div>
+        <div class="v tnum">${fmt(a.rev)}</div>
+        <div class="h">${(S.months[CUR]?.rev||[]).length} entrée(s) — ${OPEN.rev?'masquer':'voir'} le détail</div>
+      </button>
+      ${OPEN.rev?`<div class="tilebody">${revLignes('d-')}
+        <button class="btn sm primary block" style="margin-top:12px" data-act="addrev">+ Revenu</button></div>`:''}
+    </div>
     <button class="tile tile-btn" data-jump="tx:cardDep"><div class="t"><span class="dot" style="background:var(--s2)"></span>Dépenses${CHEV}</div><div class="v tnum">${fmt(a.dep)}</div><div class="h">${txOf(CUR).length} opération(s) — voir le détail</div></button>
     <button class="tile tile-btn" data-jump="hist:"><div class="t"><span class="dot" style="background:${a.epargne>=0?'var(--brand)':'var(--crit)'}"></span>Épargne du mois${CHEV}</div><div class="v tnum" style="color:${a.epargne>=0?'var(--brand)':'var(--crit)'}">${sgn(a.epargne)}</div><div class="h">${a.rev?Math.round(a.epargne/a.rev*100)+' % des revenus':'—'}</div></button>
   </div>`;
 
-  if(OPEN.rev){
-    html+=`<div class="card" id="cardRevDash" style="margin-top:-2px">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-        <div><h2>Revenus ${deMois(CUR)}</h2><p class="sub" style="margin-bottom:0">Total ${fmt(a.rev)}</p></div>
-        <button class="btn sm primary" data-act="addrev">+ Revenu</button>
-      </div>${revLignes('d-')}</div>`;
-  }
-
-  /* jauge globale */
-  const pct = totB>0? Math.min(100, totD/totB*100) : 0;
-  const over = S.cats.filter(c=>R[c.id].reste<-0.005 && (R[c.id].budget>0||R[c.id].report));
-  const st = over.length? 'crit' : statusOf(totD, totB, prog);
-  const stLbl = over.length? (over.length===1? '1 poste dépassé' : over.length+' postes dépassés')
-              : st==='warn'? 'Attention' : 'Dans les clous';
-  html+=`<div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
-      <div><h2>Budget du mois</h2><p class="sub" style="margin-bottom:0">${totB>0? 'Reste '+fmt(Math.max(0,totB-totD))+' sur '+fmt(totB)+' disponibles' : 'Aucun budget défini'}</p></div>
-      <div class="pill ${st}">${stLbl}</div>
-    </div>
-    <div class="track" style="height:12px;margin-top:14px"><div class="fill" style="width:${pct}%;background:var(--brand)"></div></div>
-    <div class="brow-foot"><span>${fmt(totD)} dépensés</span><span>${totB>0?Math.round(pct)+' % du budget · ':''}${Math.round(prog*100)} % du mois écoulé</span></div>`;
-
-  if(hors>0.005) html+=`<div class="brow-foot" style="margin-top:14px"><span>Dépenses hors catégories actives</span><span class="tnum">${fmt(hors)}</span></div>`;
-  html+=`</div>`;
+  if(hors>0.005) html+=`<div class="banner"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01" stroke-linecap="round"/></svg><div>${fmt(hors)} de dépenses dans des catégories qui n'existent plus.</div></div>`;
 
   const GMETA={
     i:{cls:'gi', nom:'Indispensables', sous:'Ce qui doit être payé',
@@ -1138,7 +1133,9 @@ function renderDash(){
       if(depliable && ouv){
         html+='<div class="subs">';
         if(directes){
-          txCat.forEach(t=>{ html+=txRow(t, {showDate:true, idp:'d-'}); });
+          html+='<div class="txinline">';
+          txCat.forEach(t=>{ html+=txRow(t, {showDate:true, noIcon:true, idp:'d-'}); });
+          html+='</div>';
         } else {
           used.forEach(u=>{
             const ouvS=!!OPEN['s:'+c.id+'|'+u.s];
@@ -1148,16 +1145,13 @@ function renderDash(){
               <svg class="schev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
             </button>`;
             if(ouvS){
-              html+='<div class="subtx">';
-              txCat.filter(t=>(t.s||'')===u.s).forEach(t=>{ html+=txRow(t, {showDate:true, hideSub:true, idp:'d-'}); });
+              html+='<div class="subtx txinline">';
+              txCat.filter(t=>(t.s||'')===u.s).forEach(t=>{ html+=txRow(t, {showDate:true, hideSub:true, noIcon:true, idp:'d-'}); });
               html+='</div>';
             }
           });
         }
-        html+=`<button type="button" class="srow all" data-catf="${esc(c.id)}">
-          <span class="sn">Ouvrir dans l'onglet Dépenses</span>
-          <svg class="schev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-        </button></div>`;
+        html+='</div>';
       }
     });
     html+='</div>';
@@ -1217,7 +1211,7 @@ function txRow(t, o){
   if(t.s && !o.hideSub) meta.push(esc(t.s));
   if(t.pm) meta.push(esc(t.pm));
   return `<div class="tx${HILITE===t.id?' hl':''}${sel?' sel':''}" id="${idp}${t.id}" data-edittx="${t.id}">
-    <div class="ico">${sel?CHECK_SVG:c.em}</div>
+    ${o.noIcon && !sel ? '' : `<div class="ico">${sel?CHECK_SVG:c.em}</div>`}
     <div class="m"><div class="n">${esc(t.n||t.c)}</div>
       <div class="c" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">${meta.join(' · ')}${due?`<span class="owe">${nfNum.format(due)} € dû</span>`:''}${back?`<span class="back">${nfNum.format(back)} € remboursés</span>`:''}</div></div>
     <div class="a tnum">${back?`<span class="gross">${nfNum.format(t.a)} €</span>`:''}${fmt(net)}</div>
@@ -1701,7 +1695,10 @@ function subRef(v){
 /* ---------- sélection multiple par appui long ---------- */
 let SEL=new Set(), SELOPEN=false, BPOS=null, SUPPRESS=0;
 
-function selKey(row){ return row.dataset.edittx ? 'd:'+row.dataset.edittx : 'r:'+row.dataset.editrev; }
+function selKey(row){
+  if(row.dataset.selid) return row.dataset.selid;
+  return row.dataset.edittx ? 'd:'+row.dataset.edittx : 'r:'+row.dataset.editrev;
+}
 function findRev(id){
   for(const k of Object.keys(S.months)){
     const r=(S.months[k].rev||[]).find(x=>x.id===id);
@@ -1722,14 +1719,17 @@ function toggleSel(key, force){
   if(SEL.has(key) && !force) SEL.delete(key); else SEL.add(key);
   if(!SEL.size) return clearSel();
   document.body.classList.add('selmode');
-  if(TAB==='dash') renderDash(); else renderTx();
+  if(el('dlgSearch').open) runSearch();
+  else if(TAB==='dash') renderDash(); else renderTx();
   renderBubble();
 }
 function clearSel(){
   SEL.clear(); SELOPEN=false;
   document.body.classList.remove('selmode');
   el('selWrap').hidden=true;
-  if(TAB==='tx') renderTx(); else if(TAB==='dash') renderDash();
+  bubbleHome();
+  if(el('dlgSearch').open) runSearch();
+  else if(TAB==='tx') renderTx(); else if(TAB==='dash') renderDash();
 }
 function placeBubble(){
   const w=el('selWrap');
@@ -1741,11 +1741,18 @@ function placeBubble(){
   BPOS.y=Math.max(8, Math.min(innerHeight-(r.height||58)-8, BPOS.y));
   w.style.left=BPOS.x+'px'; w.style.top=BPOS.y+'px';
 }
+/* un <dialog> modal s'affiche au-dessus de tout : on y déplace la bulle */
+function bubbleHome(){
+  const dlg=el('dlgSearch');
+  const cible = (dlg && dlg.open) ? dlg : document.body;
+  [el('selWrap'), el('selTrash')].forEach(n=>{ if(n && n.parentNode!==cible) cible.appendChild(n); });
+}
 function renderBubble(){
   const s=selSums();
   if(!s.n){ el('selWrap').hidden=true; return; }
   el('selWrap').hidden=false;
   el('selCount').textContent=s.n;
+  bubbleHome();
   const P=el('selPanel');
   P.hidden=!SELOPEN;
   if(SELOPEN){
@@ -1767,10 +1774,16 @@ function renderBubble(){
   placeBubble();
 }
 function selAll(){
+  if(el('dlgSearch').open){
+    document.querySelectorAll('#qRes .sres[data-selid]').forEach(r=>SEL.add(selKey(r)));
+    document.body.classList.add('selmode');
+    runSearch(); renderBubble(); return;
+  }
   const z = TAB==='dash' ? '#p-dash' : '#p-tx';
   document.querySelectorAll(z+' .tx[data-edittx],'+z+' .tx[data-editrev]').forEach(r=>SEL.add(selKey(r)));
   document.body.classList.add('selmode');
-  if(TAB==='dash') renderDash(); else renderTx();
+  if(el('dlgSearch').open) runSearch();
+  else if(TAB==='dash') renderDash(); else renderTx();
   renderBubble();
 }
 function selDelete(){
@@ -1787,7 +1800,9 @@ function selDelete(){
       if(f) S.months[f.k].rev=S.months[f.k].rev.filter(x=>x.id!==id);
     }
   });
+  const ouvert=el('dlgSearch').open;
   clearSel(); save(); bust(); render();
+  if(ouvert) runSearch();
   toast(s.n+' opération'+(s.n>1?'s':'')+' supprimée'+(s.n>1?'s':''), true);
 }
 function selCopy(){
@@ -1806,7 +1821,7 @@ function selCopy(){
 /* appui long sur une ligne */
 let lpT=null, lpFrom=null, lpMoved=false;
 document.addEventListener('pointerdown', e=>{
-  const row=e.target.closest('.tx[data-edittx],.tx[data-editrev]');
+  const row=e.target.closest('.tx[data-edittx],.tx[data-editrev],.sres[data-selid]');
   if(!row || e.target.closest('.del')) return;
   lpFrom={x:e.clientX,y:e.clientY}; lpMoved=false;
   clearTimeout(lpT);
@@ -2087,12 +2102,15 @@ function runSearch(){
   else el('qCount').innerHTML = `${res.length} résultat${res.length>1?'s':''}`
     + (totD>0?` · <b>${fmt(totD)}</b> de dépenses`:'')
     + (totR>0?` · <b style="color:var(--brand)">${fmt(totR)}</b> de revenus`:'');
-  box.innerHTML = res.slice(0,200).map(r=>`
-    <button type="button" class="sres" data-res="${r.kind}:${r.id}:${r.k}">
-      <div class="ico">${r.em}</div>
+  box.innerHTML = res.slice(0,200).map(r=>{
+    const sid=(r.kind==='dep'?'d:':'r:')+r.id;
+    const sel=SEL.has(sid);
+    return `
+    <button type="button" class="sres${sel?' sel':''}" data-res="${r.kind}:${r.id}:${r.k}" data-selid="${sid}">
+      <div class="ico">${sel?CHECK_SVG:r.em}</div>
       <div class="m"><div class="n">${mark(r.titre,q)}</div>${r.sous?`<div class="c">${mark(r.sous,q)}</div>`:''}</div>
       <div class="a tnum"><span style="color:${r.kind==='rev'?'var(--brand)':'inherit'}">${r.kind==='rev'?sgn(r.a):fmt(r.a)}</span><span class="mo">${mLabel(r.k,true)}</span></div>
-    </button>`).join('')
+    </button>`;}).join('')
     + (res.length>200?'<p class="hint" style="text-align:center">200 premiers résultats affichés.</p>':'');
 }
 function gotoResult(kind, id, k){
@@ -2211,7 +2229,10 @@ document.addEventListener('click', e=>{
   if(t.dataset.pay){ payDebt(t.dataset.pay); return; }
   if(t.dataset.unpay){ unpayDebt(t.dataset.unpay); return; }
   if(t.dataset.deldebt){ snap('suppression d\'une créance'); S.debts=debts().filter(d=>d.id!==t.dataset.deldebt); save(); bust(); render(); toast('Ligne supprimée', true); return; }
-  if(t.dataset.res){ const [kd,id,k]=t.dataset.res.split(':'); gotoResult(kd,id,k); return; }
+  if(t.dataset.res){
+    if(SEL.size && t.dataset.selid){ toggleSel(t.dataset.selid); return; }
+    const [kd,id,k]=t.dataset.res.split(':'); gotoResult(kd,id,k); return;
+  }
   if(t.dataset.kind){ setKind(t.dataset.kind); return; }
   if(t.dataset.rl){
     el('revLbl2').value = t.dataset.rl==='Autre' ? '' : t.dataset.rl;
@@ -2450,10 +2471,11 @@ el('frmDebt').addEventListener('submit', e=>{
   save(); bust(); setTimeout(()=>{render(); toast(who+' te doit '+fmt(a));},0);
 });
 el('searchBtn').addEventListener('click',()=>{
-  el('qInput').value=''; runSearch(); el('dlgSearch').showModal();
+  el('qInput').value=''; runSearch(); el('dlgSearch').showModal(); bubbleHome();
   setTimeout(()=>el('qInput').focus(),60);
 });
 el('qClose').addEventListener('click',()=>el('dlgSearch').close());
+el('dlgSearch').addEventListener('close',()=>{ if(SEL.size) clearSel(); else bubbleHome(); });
 el('qInput').addEventListener('input',runSearch);
 el('qInput').addEventListener('keydown',e=>{
   if(e.key==='Enter'){ e.preventDefault(); const f=el('qRes').querySelector('.sres'); if(f) f.click(); }
